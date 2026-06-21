@@ -148,18 +148,59 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         };
 
                         let is_last = i == total_ancestors - 1;
-                        let segment_btn = ui.button(display_name)
-                            .size(11.5)
-                            .bg(Color::TRANSPARENT)
-                            .hover_bg(colors.border)
-                            .text_color(if is_last { colors.accent } else { colors.text_primary })
-                            .radius_all(4.0)
+                        
+                        use std::hash::{Hash, Hasher};
+                        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                        p.to_path_buf().hash(&mut hasher);
+                        let segment_id = zenthra::Id::from_u64(hasher.finish());
+
+                        let mut is_drop_hovered = false;
+                        if state.dragging_item.is_some() {
+                            if let Some((rect, _)) = ui.get_recorded_layout(segment_id) {
+                                let x = rect.origin.x + ui.offset_x;
+                                let y = rect.origin.y + ui.offset_y;
+                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
+                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
+                                {
+                                    is_drop_hovered = true;
+                                }
+                            }
+                        }
+
+                        let segment_btn = ui.container()
+                            .id(segment_id)
                             .padding(2.0, 6.0, 2.0, 6.0)
-                            .show();
+                            .radius_all(4.0)
+                            .bg(if is_drop_hovered { colors.bg_active } else { Color::TRANSPARENT })
+                            .hover_bg(if is_drop_hovered { colors.bg_active } else { colors.border })
+                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
+                            .show(|ui| {
+                                ui.text(display_name)
+                                    .size(11.5)
+                                    .color(if is_last { colors.accent } else { colors.text_primary })
+                                    .show();
+                            });
 
                         if segment_btn.clicked {
                             state.change_dir(p.to_path_buf());
                             ui.request_redraw();
+                        }
+
+                        if (segment_btn.hovered || is_drop_hovered) && !ui.mouse_down {
+                            if let Some(src_path) = state.dragging_item.clone() {
+                                let dest_path = p.to_path_buf();
+                                if state.selected_paths.contains(&src_path) {
+                                    let paths: Vec<_> = state.selected_paths.iter().cloned().collect();
+                                    for path_to_move in paths {
+                                        state.move_item(&path_to_move, &dest_path);
+                                    }
+                                    state.selected_paths.clear();
+                                } else {
+                                    state.move_item(&src_path, &dest_path);
+                                }
+                                state.dragging_item = None;
+                                ui.request_redraw();
+                            }
                         }
 
                         if !is_last {

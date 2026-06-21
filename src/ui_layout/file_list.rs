@@ -261,20 +261,36 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         item.path.hash(&mut hasher);
                         let item_id = Id::from_u64(hasher.finish());
 
+                        let mut is_drop_hovered = false;
+                        if item.is_dir && state.dragging_item.is_some() {
+                            if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
+                                let x = rect.origin.x + ui.offset_x;
+                                let y = rect.origin.y + ui.offset_y;
+                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
+                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
+                                {
+                                    is_drop_hovered = true;
+                                }
+                            }
+                        }
+
+                        let show_highlight = is_selected || is_drop_hovered;
+
                         let resp = ui.container()
                             .id(item_id)
                             .row()
                             .fill_x()
                             .valign(Align::Center)
                             .padding(4.0, 12.0, 4.0, 12.0)
-                            .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if is_selected {
+                            .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
+                            .hover_bg(if show_highlight {
                                 colors.bg_active
                             } else if show_hover {
                                 colors.border
                             } else {
                                 Color::TRANSPARENT
                             })
+                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
                             .radius_all(4.0)
                             .clip(true)
                             .show(|ui| {
@@ -446,6 +462,21 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         item.path.hash(&mut hasher);
                         let item_id = Id::from_u64(hasher.finish());
 
+                        let mut is_drop_hovered = false;
+                        if item.is_dir && state.dragging_item.is_some() {
+                            if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
+                                let x = rect.origin.x + ui.offset_x;
+                                let y = rect.origin.y + ui.offset_y;
+                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
+                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
+                                {
+                                    is_drop_hovered = true;
+                                }
+                            }
+                        }
+
+                        let show_highlight = is_selected || is_drop_hovered;
+
                         let resp = ui.container()
                             .id(item_id)
                             .width(tile_w)
@@ -454,14 +485,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .align(Align::Center)
                             .valign(Align::Center)
                             .gap(2.0)
-                            .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if is_selected {
+                            .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
+                            .hover_bg(if show_highlight {
                                 colors.bg_active
                             } else if show_hover {
                                 colors.border
                             } else {
                                 Color::TRANSPARENT
                             })
+                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
                             .radius_all(6.0)
                             .padding(2.0, 2.0, 2.0, 2.0)
                             .clip(true)

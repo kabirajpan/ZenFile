@@ -29,20 +29,42 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
 
             let mut draw_shortcut = |ui: &mut Ui, icon: &str, label: &str, path: Option<PathBuf>| {
                 if let Some(target_path) = path {
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                    target_path.hash(&mut hasher);
+                    let shortcut_id = zenthra::Id::from_u64(hasher.finish());
+
+                    let mut is_drop_hovered = false;
+                    if state.dragging_item.is_some() {
+                        if let Some((rect, _)) = ui.get_recorded_layout(shortcut_id) {
+                            let x = rect.origin.x + ui.offset_x;
+                            let y = rect.origin.y + ui.offset_y;
+                            if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
+                                && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
+                            {
+                                is_drop_hovered = true;
+                            }
+                        }
+                    }
+
                     let is_active = state.current_dir == target_path;
+                    let show_highlight = is_active || is_drop_hovered;
+
                     let resp = ui.container()
+                        .id(shortcut_id)
                         .row()
                         .gap(10.0)
                         .valign(Align::Center)
                         .fill_x()
                         .padding(6.0, 10.0, 6.0, 10.0)
-                        .bg(if is_active { colors.bg_active } else { Color::TRANSPARENT })
-                        .hover_bg(if is_active { colors.accent.with_alpha(0.25) } else { colors.border })
+                        .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
+                        .hover_bg(if show_highlight { colors.bg_active } else { colors.border })
+                        .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
                         .radius_all(6.0)
                         .show(|ui| {
                             ui.text(icon)
                                 .size(12.0)
-                                .color(if is_active { colors.accent } else { colors.text_muted })
+                                .color(if is_active { colors.text_primary } else { colors.text_muted })
                                 .show();
                             ui.text(label)
                                 .size(11.5)
@@ -54,7 +76,7 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
                         state.change_dir(target_path.clone());
                         ui.request_redraw();
                     }
-                    if resp.hovered && !ui.mouse_down {
+                    if (resp.hovered || is_drop_hovered) && !ui.mouse_down {
                         if let Some(src_path) = state.dragging_item.clone() {
                             if state.selected_paths.contains(&src_path) {
                                 let paths: Vec<_> = state.selected_paths.iter().cloned().collect();

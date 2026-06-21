@@ -56,11 +56,11 @@ fn main() {
                                     .hover_bg(colors.accent)
                                     .show(|_| {});
 
-                                if splitter_res.hovered || state.active_resize_sidebar {
+                                if (splitter_res.hovered || state.active_resize_sidebar) && state.dragging_item.is_none() {
                                     ui.cursor_icon = CursorIcon::ColResize;
                                 }
 
-                                if splitter_res.pressed && state.drag_select_start.is_none() {
+                                if splitter_res.pressed && state.drag_select_start.is_none() && state.dragging_item.is_none() {
                                     state.active_resize_sidebar = true;
                                 }
                                 if !ui.mouse_down {
@@ -91,11 +91,11 @@ fn main() {
                                     .hover_bg(colors.accent)
                                     .show(|_| {});
 
-                                if splitter_res.hovered || state.active_resize_details {
+                                if (splitter_res.hovered || state.active_resize_details) && state.dragging_item.is_none() {
                                     ui.cursor_icon = CursorIcon::ColResize;
                                 }
 
-                                if splitter_res.pressed && state.drag_select_start.is_none() {
+                                if splitter_res.pressed && state.drag_select_start.is_none() && state.dragging_item.is_none() {
                                     state.active_resize_details = true;
                                 }
                                 if !ui.mouse_down {
