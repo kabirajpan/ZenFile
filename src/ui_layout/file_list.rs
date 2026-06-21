@@ -606,6 +606,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                 if is_double {
                     state.last_click_time = None;
                     state.last_clicked_idx = None;
+                    state.deferred_click_idx = None;
                     let target_path = filtered_items[idx].path.clone();
                     if filtered_items[idx].is_dir {
                         state.change_dir(target_path);
@@ -615,15 +616,24 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                 } else {
                     state.last_click_time = Some(now);
                     state.last_clicked_idx = Some(idx);
-                    // Selection with keyboard modifiers
-                    if state.ctrl_pressed {
-                        state.toggle_select(idx);
-                    } else if state.shift_pressed && state.select_anchor.is_some() {
-                        let anchor = state.select_anchor.unwrap();
-                        state.selected_paths.clear();
-                        state.select_range(anchor, idx);
+
+                    let path = &filtered_items[idx].path;
+                    let is_already_selected = state.selected_paths.contains(path);
+                    let has_modifiers = state.ctrl_pressed || state.shift_pressed;
+
+                    if is_already_selected && !has_modifiers {
+                        state.deferred_click_idx = Some(idx);
                     } else {
-                        state.select_single(idx);
+                        state.deferred_click_idx = None;
+                        if state.ctrl_pressed {
+                            state.toggle_select(idx);
+                        } else if state.shift_pressed && state.select_anchor.is_some() {
+                            let anchor = state.select_anchor.unwrap();
+                            state.selected_paths.clear();
+                            state.select_range(anchor, idx);
+                        } else {
+                            state.select_single(idx);
+                        }
                     }
                 }
                 ui.request_redraw();
@@ -726,6 +736,12 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
     // Drag-and-drop end of gesture release cleanup
     if !ui.mouse_down && (state.dragging_item.is_some() || state.drag_pressed_item.is_some()) {
+        if state.dragging_item.is_none() {
+            if let Some(idx) = state.deferred_click_idx {
+                state.select_single(idx);
+            }
+        }
+        state.deferred_click_idx = None;
         state.dragging_item = None;
         state.drag_pressed_item = None;
         state.drag_start_pos = None;
@@ -736,14 +752,18 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     // Render Drag Thumbnail tracking cursor (only when NOT in marquee selection)
     if state.drag_select_start.is_none() {
         if let Some(drag_path) = &state.dragging_item {
-            let filename = drag_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-            let is_dir = drag_path.is_dir();
-            let icon_path = if is_dir {
-                get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+            let is_stack = state.selected_paths.len() > 1 && state.selected_paths.contains(drag_path);
+            let drag_count = if is_stack { state.selected_paths.len() } else { 1 };
+
+            let stack_paths = if is_stack {
+                let mut paths: Vec<_> = state.selected_paths.iter().cloned().collect();
+                if let Some(pos) = paths.iter().position(|p| p == drag_path) {
+                    paths.swap(0, pos);
+                }
+                paths.truncate(3);
+                paths
             } else {
-                let extension = drag_path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
-                let (_, category) = crate::state::get_file_info(drag_path);
-                get_item_icon_path(&state.icon_theme, &category, &extension)
+                vec![drag_path.clone()]
             };
 
             let mouse_x = ui.mouse_x;
@@ -763,86 +783,177 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                 }
             });
 
-             if state.view_mode == ViewMode::List {
-                let img_src = ImageSource::Path(icon_path.clone());
-                let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
-                    let orig_w = *orig_w as f32;
-                    let orig_h = *orig_h as f32;
-                    let ratio = orig_w / orig_h;
-                    if ratio > 1.0 {
-                        (16.0, 16.0 / ratio)
-                    } else {
-                        (16.0 * ratio, 16.0)
-                    }
-                } else {
-                    (16.0, 16.0)
-                };
+            if state.view_mode == ViewMode::List {
+                for (i, path) in stack_paths.iter().enumerate().rev() {
+                    let level = i;
+                    let x_offset = level as f32 * 6.0;
+                    let y_offset = level as f32 * 6.0;
+                    let opacity = match level {
+                        0 => 1.0,
+                        1 => 0.65,
+                        _ => 0.35,
+                    };
 
-                ui.container()
-                    .overlay()
-                    .absolute(mouse_x - ox, mouse_y - oy)
-                    .width(180.0)
-                    .height(28.0)
-                    .padding(4.0, 12.0, 4.0, 12.0)
-                    .row()
-                    .gap(8.0)
-                    .valign(Align::Center)
-                    .show(|ui| {
-                        ui.image(img_src)
-                            .size(w, h)
-                            .fit(ObjectFit::Contain)
-                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 3.0, 6.0)
-                            .show();
-                        ui.text(&filename)
-                            .size(11.5)
-                            .color(colors.text_primary)
-                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
-                            .show();
-                    });
+                    let filename = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let is_dir = path.is_dir();
+                    let icon_path = if is_dir {
+                        get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+                    } else {
+                        let extension = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+                        let (_, category) = crate::state::get_file_info(path);
+                        get_item_icon_path(&state.icon_theme, &category, &extension)
+                    };
+
+                    let img_src = ImageSource::Path(icon_path.clone());
+                    let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
+                        let orig_w = *orig_w as f32;
+                        let orig_h = *orig_h as f32;
+                        let ratio = orig_w / orig_h;
+                        if ratio > 1.0 {
+                            (16.0, 16.0 / ratio)
+                        } else {
+                            (16.0 * ratio, 16.0)
+                        }
+                    } else {
+                        (16.0, 16.0)
+                    };
+
+                    ui.container()
+                        .overlay()
+                        .absolute(mouse_x - ox + x_offset, mouse_y - oy - y_offset)
+                        .width(180.0)
+                        .height(28.0)
+                        .padding(4.0, 12.0, 4.0, 12.0)
+                        .row()
+                        .gap(8.0)
+                        .valign(Align::Center)
+                        .show(|ui| {
+                            ui.image(img_src)
+                                .size(w, h)
+                                .fit(ObjectFit::Contain)
+                                .opacity(opacity)
+                                .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 3.0, 6.0)
+                                .show();
+                            if level == 0 {
+                                ui.text(&filename)
+                                    .size(11.5)
+                                    .color(colors.text_primary)
+                                    .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
+                                    .show();
+                            }
+                        });
+                }
+
+                if is_stack {
+                    ui.container()
+                        .overlay()
+                        .absolute(mouse_x - ox + 22.0, mouse_y - oy - 2.0)
+                        .width(18.0)
+                        .height(18.0)
+                        .bg(Color::rgb(239.0 / 255.0, 68.0 / 255.0, 68.0 / 255.0))
+                        .radius_all(9.0)
+                        .row()
+                        .align(Align::Center)
+                        .valign(Align::Center)
+                        .show(|ui| {
+                            ui.text(&drag_count.to_string())
+                                .size(9.0)
+                                .color(Color::WHITE)
+                                .bold()
+                                .show();
+                        });
+                }
             } else {
                 let (tile_w, tile_h, icon_size, name_max, font_size) = match state.view_mode {
                     ViewMode::Medium     => (76.0_f32,  68.0_f32,  40.0_f32, 10, 9.5_f32),
                     ViewMode::Large      => (112.0_f32, 96.0_f32,  64.0_f32, 14, 10.5_f32),
                     ViewMode::ExtraLarge => (152.0_f32, 132.0_f32, 96.0_f32, 18, 11.0_f32),
-                    _ => (76.0_f32, 68.0_f32, 40.0_f32, 10, 9.5_f32), // Fallback
-                };
-                let display_name = truncate_filename(&filename, name_max);
-                let img_src = ImageSource::Path(icon_path.clone());
-                let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
-                    let orig_w = *orig_w as f32;
-                    let orig_h = *orig_h as f32;
-                    let ratio = orig_w / orig_h;
-                    if ratio > 1.0 {
-                        (icon_size, icon_size / ratio)
-                    } else {
-                        (icon_size * ratio, icon_size)
-                    }
-                } else {
-                    (icon_size, icon_size)
+                    _ => (76.0_f32, 68.0_f32, 40.0_f32, 10, 9.5_f32),
                 };
 
-                ui.container()
-                    .overlay()
-                    .absolute(mouse_x - ox, mouse_y - oy)
-                    .width(tile_w)
-                    .height(tile_h)
-                    .padding(2.0, 2.0, 2.0, 2.0)
-                    .column()
-                    .align(Align::Center)
-                    .valign(Align::Center)
-                    .gap(2.0)
-                    .show(|ui| {
-                        ui.image(img_src)
-                            .size(w, h)
-                            .fit(ObjectFit::Contain)
-                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 4.0, 8.0)
-                            .show();
-                        ui.text(&display_name)
-                            .size(font_size)
-                            .color(colors.text_primary)
-                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
-                            .show();
-                    });
+                for (i, path) in stack_paths.iter().enumerate().rev() {
+                    let level = i;
+                    let x_offset = level as f32 * 8.0;
+                    let y_offset = level as f32 * 8.0;
+                    let opacity = match level {
+                        0 => 1.0,
+                        1 => 0.65,
+                        _ => 0.35,
+                    };
+
+                    let filename = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let is_dir = path.is_dir();
+                    let icon_path = if is_dir {
+                        get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+                    } else {
+                        let extension = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+                        let (_, category) = crate::state::get_file_info(path);
+                        get_item_icon_path(&state.icon_theme, &category, &extension)
+                    };
+
+                    let img_src = ImageSource::Path(icon_path.clone());
+                    let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
+                        let orig_w = *orig_w as f32;
+                        let orig_h = *orig_h as f32;
+                        let ratio = orig_w / orig_h;
+                        if ratio > 1.0 {
+                            (icon_size, icon_size / ratio)
+                        } else {
+                            (icon_size * ratio, icon_size)
+                        }
+                    } else {
+                        (icon_size, icon_size)
+                    };
+
+                    ui.container()
+                        .overlay()
+                        .absolute(mouse_x - ox + x_offset, mouse_y - oy - y_offset)
+                        .width(tile_w)
+                        .height(tile_h)
+                        .padding(2.0, 2.0, 2.0, 2.0)
+                        .column()
+                        .align(Align::Center)
+                        .valign(Align::Center)
+                        .gap(2.0)
+                        .show(|ui| {
+                            ui.image(img_src)
+                                .size(w, h)
+                                .fit(ObjectFit::Contain)
+                                .opacity(opacity)
+                                .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 4.0, 8.0)
+                                .show();
+                            if level == 0 {
+                                let display_name = truncate_filename(&filename, name_max);
+                                ui.text(&display_name)
+                                    .size(font_size)
+                                    .color(colors.text_primary)
+                                    .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
+                                    .show();
+                            }
+                        });
+                }
+
+                if is_stack {
+                    let badge_x = mouse_x - ox + (tile_w + icon_size) / 2.0 - 8.0;
+                    let badge_y = mouse_y - oy + (tile_h - icon_size) / 3.0 - 8.0;
+                    ui.container()
+                        .overlay()
+                        .absolute(badge_x, badge_y)
+                        .width(20.0)
+                        .height(20.0)
+                        .bg(Color::rgb(239.0 / 255.0, 68.0 / 255.0, 68.0 / 255.0))
+                        .radius_all(10.0)
+                        .row()
+                        .align(Align::Center)
+                        .valign(Align::Center)
+                        .show(|ui| {
+                            ui.text(&drag_count.to_string())
+                                .size(10.0)
+                                .color(Color::WHITE)
+                                .bold()
+                                .show();
+                        });
+                }
             }
         }
     }

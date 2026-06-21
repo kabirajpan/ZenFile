@@ -56,7 +56,15 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
                     }
                     if resp.hovered && !ui.mouse_down {
                         if let Some(src_path) = state.dragging_item.clone() {
-                            state.move_item(&src_path, &target_path);
+                            if state.selected_paths.contains(&src_path) {
+                                let paths: Vec<_> = state.selected_paths.iter().cloned().collect();
+                                for p in paths {
+                                    state.move_item(&p, &target_path);
+                                }
+                                state.selected_paths.clear();
+                            } else {
+                                state.move_item(&src_path, &target_path);
+                            }
                             state.dragging_item = None;
                             ui.request_redraw();
                         }
