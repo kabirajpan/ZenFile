@@ -1,10 +1,12 @@
 use crate::state::FileManagerState;
-use crate::theme::ThemeColors;
-use super::common::{NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH};
+use super::common::{
+    NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH,
+    is_drag_drop_hovered, drop_target_bg,
+};
 use zenthra::{Color, Ui, Align};
 
 pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     ui.container()
         .fill_x()
@@ -25,7 +27,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
             let toggle_btn = ui.button(toggle_icon)
                 .width(28.0)
                 .bg(colors.bg_panel)
-                .hover_bg(colors.border)
+                .hover_bg(colors.highlight)
                 .text_color(if state.sidebar_visible { colors.accent } else { colors.text_muted })
                 .radius_all(4.0)
                 .padding(5.0, 0.0, 5.0, 0.0)
@@ -49,7 +51,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let back_btn = ui.button(NF_FA_ARROW_LEFT)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(if can_go_back { colors.border } else { Color::TRANSPARENT })
+                        .hover_bg(if can_go_back { colors.highlight } else { Color::TRANSPARENT })
                         .text_color(if can_go_back { colors.text_primary } else { colors.text_dim })
                         .radius_all(4.0)
                         .padding(4.0, 6.0, 4.0, 6.0)
@@ -64,7 +66,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let fwd_btn = ui.button(NF_FA_ARROW_RIGHT)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(if can_go_forward { colors.border } else { Color::TRANSPARENT })
+                        .hover_bg(if can_go_forward { colors.highlight } else { Color::TRANSPARENT })
                         .text_color(if can_go_forward { colors.text_primary } else { colors.text_dim })
                         .radius_all(4.0)
                         .padding(4.0, 6.0, 4.0, 6.0)
@@ -79,7 +81,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let up_btn = ui.button(NF_FA_ARROW_UP)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(if has_parent { colors.border } else { Color::TRANSPARENT })
+                        .hover_bg(if has_parent { colors.highlight } else { Color::TRANSPARENT })
                         .text_color(if has_parent { colors.text_primary } else { colors.text_dim })
                         .radius_all(4.0)
                         .padding(4.0, 6.0, 4.0, 6.0)
@@ -93,7 +95,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let refresh_btn = ui.button(NF_FA_REFRESH)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(colors.border)
+                        .hover_bg(colors.highlight)
                         .text_color(colors.text_primary)
                         .radius_all(4.0)
                         .padding(4.0, 6.0, 4.0, 6.0)
@@ -156,24 +158,19 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
 
                         let mut is_drop_hovered = false;
                         if state.dragging_item.is_some() {
-                            if let Some((rect, _)) = ui.get_recorded_layout(segment_id) {
-                                let x = rect.origin.x + ui.offset_x;
-                                let y = rect.origin.y + ui.offset_y;
-                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
-                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
-                                {
-                                    is_drop_hovered = true;
-                                }
-                            }
+                            is_drop_hovered = is_drag_drop_hovered(ui, segment_id);
                         }
 
                         let segment_btn = ui.container()
                             .id(segment_id)
                             .padding(2.0, 6.0, 2.0, 6.0)
                             .radius_all(4.0)
-                            .bg(if is_drop_hovered { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if is_drop_hovered { colors.bg_active } else { colors.border })
-                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
+                            .bg(if is_drop_hovered {
+                                drop_target_bg(&colors, true)
+                            } else {
+                                Color::TRANSPARENT
+                            })
+                            .hover_bg(colors.highlight)
                             .show(|ui| {
                                 ui.text(display_name)
                                     .size(11.5)
@@ -217,7 +214,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                 .width(24.0)
                 .size(11.0)
                 .bg(Color::TRANSPARENT)
-                .hover_bg(colors.border)
+                .hover_bg(colors.highlight)
                 .text_color(colors.text_muted)
                 .radius_all(4.0)
                 .padding(4.0, 0.0, 4.0, 0.0)
@@ -266,7 +263,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                 .width(26.0)
                 .size(11.5)
                 .bg(if is_list { colors.bg_panel } else { Color::TRANSPARENT })
-                .hover_bg(colors.border)
+                .hover_bg(colors.highlight)
                 .text_color(if is_list { colors.accent } else { colors.text_muted })
                 .radius_all(4.0)
                 .padding(5.0, 0.0, 5.0, 0.0)
@@ -283,7 +280,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                 .width(26.0)
                 .size(11.5)
                 .bg(if !is_list { colors.bg_panel } else { Color::TRANSPARENT })
-                .hover_bg(colors.border)
+                .hover_bg(colors.highlight)
                 .text_color(if !is_list { colors.accent } else { colors.text_muted })
                 .radius_all(4.0)
                 .padding(5.0, 0.0, 5.0, 0.0)
@@ -312,7 +309,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         .width(24.0)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(if can_zoom_out { colors.border } else { Color::TRANSPARENT })
+                        .hover_bg(if can_zoom_out { colors.highlight } else { Color::TRANSPARENT })
                         .text_color(if can_zoom_out { colors.text_primary } else { colors.text_dim })
                         .radius_all(3.0)
                         .padding(4.0, 0.0, 4.0, 0.0)
@@ -338,7 +335,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         .width(24.0)
                         .size(11.0)
                         .bg(Color::TRANSPARENT)
-                        .hover_bg(if can_zoom_in { colors.border } else { Color::TRANSPARENT })
+                        .hover_bg(if can_zoom_in { colors.highlight } else { Color::TRANSPARENT })
                         .text_color(if can_zoom_in { colors.text_primary } else { colors.text_dim })
                         .radius_all(3.0)
                         .padding(4.0, 0.0, 4.0, 0.0)
@@ -371,7 +368,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
             let right_toggle_btn = ui.button(right_toggle_icon)
                 .width(28.0)
                 .bg(colors.bg_panel)
-                .hover_bg(colors.border)
+                .hover_bg(colors.highlight)
                 .text_color(if state.details_visible { colors.accent } else { colors.text_muted })
                 .radius_all(4.0)
                 .padding(5.0, 0.0, 5.0, 0.0)

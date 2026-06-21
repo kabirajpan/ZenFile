@@ -1,14 +1,14 @@
 use crate::state::FileManagerState;
-use crate::theme::ThemeColors;
 use super::common::{
     NF_FA_HOME, NF_FA_DESKTOP, NF_FA_DOWNLOAD, NF_FA_FILE_ALT, NF_FA_HDD,
     NF_FA_MUSIC, NF_FA_PICTURE, NF_FA_FILM,
+    is_drag_drop_hovered, drop_target_bg,
 };
 use zenthra::{Color, Ui, Align, FontWeight};
 use std::path::PathBuf;
 
 pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     ui.container()
         .width(state.sidebar_width)
@@ -36,19 +36,17 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
 
                     let mut is_drop_hovered = false;
                     if state.dragging_item.is_some() {
-                        if let Some((rect, _)) = ui.get_recorded_layout(shortcut_id) {
-                            let x = rect.origin.x + ui.offset_x;
-                            let y = rect.origin.y + ui.offset_y;
-                            if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
-                                && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
-                            {
-                                is_drop_hovered = true;
-                            }
-                        }
+                        is_drop_hovered = is_drag_drop_hovered(ui, shortcut_id);
                     }
 
                     let is_active = state.current_dir == target_path;
-                    let show_highlight = is_active || is_drop_hovered;
+                    let bg_color = if is_drop_hovered {
+                        drop_target_bg(&colors, true)
+                    } else if is_active {
+                        colors.bg_active
+                    } else {
+                        Color::TRANSPARENT
+                    };
 
                     let resp = ui.container()
                         .id(shortcut_id)
@@ -57,9 +55,8 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
                         .valign(Align::Center)
                         .fill_x()
                         .padding(6.0, 10.0, 6.0, 10.0)
-                        .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
-                        .hover_bg(if show_highlight { colors.bg_active } else { colors.border })
-                        .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
+                        .bg(bg_color)
+                        .hover_bg(if is_active { colors.bg_active } else { colors.highlight })
                         .radius_all(6.0)
                         .show(|ui| {
                             ui.text(icon)

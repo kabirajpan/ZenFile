@@ -1,14 +1,14 @@
 use crate::state::{FileManagerState, format_size, ViewMode};
 use std::hash::{Hash, Hasher};
-use crate::theme::ThemeColors;
 use super::common::{
     get_item_icon_path, get_folder_icon_path, tag_name_to_color,
     truncate_filename, truncate_str, format_date, open_file,
+    is_drag_drop_hovered, drop_target_bg,
 };
 use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align, Id, PlatformEvent};
 
 pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     // Inline Rename Key & Click Handler
     if let Some(rename_path) = state.renaming_item.clone() {
@@ -263,18 +263,16 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                         let mut is_drop_hovered = false;
                         if item.is_dir && state.dragging_item.is_some() {
-                            if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
-                                let x = rect.origin.x + ui.offset_x;
-                                let y = rect.origin.y + ui.offset_y;
-                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
-                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
-                                {
-                                    is_drop_hovered = true;
-                                }
-                            }
+                            is_drop_hovered = is_drag_drop_hovered(ui, item_id);
                         }
 
-                        let show_highlight = is_selected || is_drop_hovered;
+                        let bg_color = if is_selected {
+                            colors.bg_active
+                        } else if is_drop_hovered {
+                            drop_target_bg(&colors, true)
+                        } else {
+                            Color::TRANSPARENT
+                        };
 
                         let resp = ui.container()
                             .id(item_id)
@@ -282,15 +280,14 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .fill_x()
                             .valign(Align::Center)
                             .padding(4.0, 12.0, 4.0, 12.0)
-                            .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_highlight {
+                            .bg(bg_color)
+                            .hover_bg(if is_selected {
                                 colors.bg_active
                             } else if show_hover {
-                                colors.border
+                                colors.highlight
                             } else {
                                 Color::TRANSPARENT
                             })
-                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
                             .radius_all(4.0)
                             .clip(true)
                             .show(|ui| {
@@ -464,18 +461,16 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                         let mut is_drop_hovered = false;
                         if item.is_dir && state.dragging_item.is_some() {
-                            if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
-                                let x = rect.origin.x + ui.offset_x;
-                                let y = rect.origin.y + ui.offset_y;
-                                if ui.mouse_x >= x && ui.mouse_x <= x + rect.size.width
-                                    && ui.mouse_y >= y && ui.mouse_y <= y + rect.size.height 
-                                {
-                                    is_drop_hovered = true;
-                                }
-                            }
+                            is_drop_hovered = is_drag_drop_hovered(ui, item_id);
                         }
 
-                        let show_highlight = is_selected || is_drop_hovered;
+                        let bg_color = if is_selected {
+                            colors.bg_active
+                        } else if is_drop_hovered {
+                            drop_target_bg(&colors, true)
+                        } else {
+                            Color::TRANSPARENT
+                        };
 
                         let resp = ui.container()
                             .id(item_id)
@@ -485,15 +480,14 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .align(Align::Center)
                             .valign(Align::Center)
                             .gap(2.0)
-                            .bg(if show_highlight { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_highlight {
+                            .bg(bg_color)
+                            .hover_bg(if is_selected {
                                 colors.bg_active
                             } else if show_hover {
-                                colors.border
+                                colors.highlight
                             } else {
                                 Color::TRANSPARENT
                             })
-                            .border(if is_drop_hovered { colors.accent } else { Color::TRANSPARENT }, 1.0)
                             .radius_all(6.0)
                             .padding(2.0, 2.0, 2.0, 2.0)
                             .clip(true)

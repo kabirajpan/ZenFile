@@ -1,5 +1,4 @@
 use crate::state::{FileManagerState, format_size};
-use crate::theme::ThemeColors;
 use super::common::{
     get_item_icon_path, open_file, truncate_filename, truncate_str,
     NF_FA_EXTERNAL_LINK, NF_FA_EDIT, NF_FA_TRASH,
@@ -7,7 +6,7 @@ use super::common::{
 use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align};
 
 pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     ui.container()
         .width(state.details_width)
@@ -185,7 +184,7 @@ pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
                                     .width(18.0)
                                     .size(9.5)
                                     .bg(Color::TRANSPARENT)
-                                    .hover_bg(colors.border)
+                                    .hover_bg(colors.highlight)
                                     .text_color(colors.text_muted)
                                     .radius_all(3.0)
                                     .padding(2.0, 0.0, 2.0, 0.0)
@@ -236,7 +235,7 @@ pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
                             .valign(Align::Center)
                             .align(Align::Center)
                             .bg(colors.bg_panel)
-                            .hover_bg(colors.border)
+                            .hover_bg(colors.highlight)
                             .radius_all(6.0)
                             .padding(6.0, 12.0, 6.0, 12.0);
                         let open_btn_c = if is_narrow { open_btn_c.fill_x() } else { open_btn_c };
@@ -255,7 +254,7 @@ pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
                             .valign(Align::Center)
                             .align(Align::Center)
                             .bg(colors.bg_panel)
-                            .hover_bg(colors.border)
+                            .hover_bg(colors.highlight)
                             .radius_all(6.0)
                             .padding(6.0, 12.0, 6.0, 12.0);
                         let rename_btn_c = if is_narrow { rename_btn_c.fill_x() } else { rename_btn_c };

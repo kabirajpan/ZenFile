@@ -1,10 +1,10 @@
 use crate::state::{FileManagerState, ViewMode, SortBy, SortOrder};
-use crate::theme::{ThemeMode, ThemeColors};
+use crate::theme::{ThemeMode, ACCENT_COLOR_OPTIONS, HIGHLIGHT_COLOR_OPTIONS};
 use super::common::NF_FA_FOLDER;
 use zenthra::{Color, Ui, FontWeight, WindowAction, Align, Id};
 
 pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     // Reset hover flag for menus in title bar since we do not use menu_bar wrapper
     let hover_flag_key = Id::from_u64(999999902);
@@ -216,6 +216,36 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         }
 
                         ui.spacing(4.0);
+
+                        ui.sub_menu("Accent Color").show(|ui| {
+                            for (color_id, color_name) in ACCENT_COLOR_OPTIONS {
+                                let is_active = state.accent_color == *color_id;
+                                let label = if is_active {
+                                    format!("● {}", color_name)
+                                } else {
+                                    format!("  {}", color_name)
+                                };
+                                if ui.menu_item(&label).show().clicked {
+                                    state.accent_color = color_id.to_string();
+                                    ui.request_redraw();
+                                }
+                            }
+                        });
+
+                        ui.sub_menu("Highlight Color").show(|ui| {
+                            for (color_id, color_name) in HIGHLIGHT_COLOR_OPTIONS {
+                                let is_active = state.highlight_color == *color_id;
+                                let label = if is_active {
+                                    format!("● {}", color_name)
+                                } else {
+                                    format!("  {}", color_name)
+                                };
+                                if ui.menu_item(&label).show().clicked {
+                                    state.highlight_color = color_id.to_string();
+                                    ui.request_redraw();
+                                }
+                            }
+                        });
 
                         ui.sub_menu("Folder Color").show(|ui| {
                             let colors_list = [

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use crate::theme::ThemeMode;
+use crate::theme::{ThemeMode, ThemeColors};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ViewMode {
@@ -45,6 +45,8 @@ pub struct FileManagerState {
     pub history_idx: usize,
     pub search_query: String,
     pub theme: ThemeMode,
+    pub accent_color: String,
+    pub highlight_color: String,
     pub show_about: bool,
     pub text_preview: Option<String>,
     pub about_x: f32,
@@ -88,6 +90,10 @@ pub struct FileManagerState {
 }
 
 impl FileManagerState {
+    pub fn colors(&self) -> ThemeColors {
+        ThemeColors::resolve(self.theme, &self.accent_color, &self.highlight_color)
+    }
+
     pub fn new() -> Self {
         // Start in user home directory (or current directory fallback)
         let initial_dir = dirs::home_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
@@ -100,6 +106,8 @@ impl FileManagerState {
             history_idx: 0,
             search_query: String::new(),
             theme: ThemeMode::Dark,
+            accent_color: "yellow".to_string(),
+            highlight_color: "gray".to_string(),
             show_about: true,
             text_preview: None,
             about_x: 390.0,

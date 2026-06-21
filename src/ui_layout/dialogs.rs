@@ -10,7 +10,7 @@ pub fn draw_about_window(ui: &mut Ui, state: &mut FileManagerState) {
         return;
     }
 
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
     let mut about_pos = [state.about_x, state.about_y];
 
     ui.window("About ZenFile", &mut state.show_about, &mut about_pos)
@@ -81,7 +81,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
         return;
     };
 
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
     let menu_w = 200.0;
     
     // Calculate menu height dynamically based on options.
@@ -429,7 +429,7 @@ fn draw_menu_item(ui: &mut Ui, label: &str, colors: ThemeColors, id_str: &str) -
         .valign(Align::Center)
         .padding(2.0, 8.0, 2.0, 8.0)
         .bg(Color::TRANSPARENT)
-        .hover_bg(colors.border)
+        .hover_bg(colors.highlight)
         .radius_all(4.0)
         .show(|ui| {
             ui.text(label)
@@ -450,7 +450,7 @@ fn draw_menu_item_disabled(ui: &mut Ui, label: &str, colors: ThemeColors, disabl
         .bg(Color::TRANSPARENT)
         .radius_all(4.0);
     if !disabled {
-        c = c.hover_bg(colors.border);
+        c = c.hover_bg(colors.highlight);
     }
     c.show(|ui| {
         ui.text(label)
@@ -494,7 +494,7 @@ pub fn draw_info_window(ui: &mut Ui, state: &mut FileManagerState) {
         }
     };
 
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
 
     ui.window("Get Info", &mut state.info_window_open, &mut state.info_window_pos)
         .size(320.0, 280.0)

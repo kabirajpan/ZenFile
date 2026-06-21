@@ -1,6 +1,37 @@
 use zenthra::{Color, Id, Ui};
 use std::path::{Path, PathBuf};
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
+
+/// Matches the ID resolution used by `container().id(...)`.
+pub fn resolve_widget_id(ui: &Ui, id: Id) -> Id {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    id.hash(&mut hasher);
+    if let Some(parent) = ui.semantic_stack.last() {
+        parent.hash(&mut hasher);
+    }
+    Id::from_u64(hasher.finish())
+}
+
+/// True when the cursor is over a widget's previous-frame screen rect.
+pub fn is_drag_drop_hovered(ui: &Ui, base_id: Id) -> bool {
+    let resolved = resolve_widget_id(ui, base_id);
+    if let Some(rect) = ui.screen_layout_cache.get(&resolved) {
+        ui.mouse_x >= rect.origin.x
+            && ui.mouse_x <= rect.origin.x + rect.size.width
+            && ui.mouse_y >= rect.origin.y
+            && ui.mouse_y <= rect.origin.y + rect.size.height
+    } else {
+        false
+    }
+}
+
+pub fn drop_target_bg(colors: &crate::theme::ThemeColors, is_drop_hovered: bool) -> Color {
+    if is_drop_hovered {
+        colors.highlight
+    } else {
+        Color::TRANSPARENT
+    }
+}
 
 pub fn tag_name_to_color(name: &str) -> Color {
     match name {

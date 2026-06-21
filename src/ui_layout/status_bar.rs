@@ -1,10 +1,9 @@
 use crate::state::FileManagerState;
-use crate::theme::ThemeColors;
 use super::common::truncate_filename;
 use zenthra::{Ui, Align};
 
 pub fn draw_status_bar(ui: &mut Ui, state: &mut FileManagerState) {
-    let colors = ThemeColors::get(state.theme);
+    let colors = state.colors();
     let items_count = state.items.len();
     let folders_count = state.items.iter().filter(|i| i.is_dir).count();
     let files_count = items_count.saturating_sub(folders_count);

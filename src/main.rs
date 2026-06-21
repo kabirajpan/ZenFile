@@ -3,7 +3,7 @@ mod theme;
 mod ui_layout;
 
 use state::FileManagerState;
-use theme::{ThemeMode, ThemeColors};
+use theme::ThemeMode;
 use zenthra::prelude::*;
 use zenthra::Id;
 
@@ -23,7 +23,7 @@ fn main() {
             let theme_val = if state.theme == ThemeMode::Light { 1.0 } else { 0.0 };
             ui.interaction_state.insert(Id::from_u64(999999999), theme_val);
 
-            let colors = ThemeColors::get(state.theme);
+            let colors = state.colors();
 
             // Main Background Container (lays out Title Bar, Navigation, Content, and Status Bar vertically)
             ui.container()
@@ -42,7 +42,7 @@ fn main() {
                         .fill()
                         .gap(0.0)
                         .show(|ui| {
-                            let colors = ThemeColors::get(state.theme);
+                            let colors = state.colors();
 
                             // Left sidebar shortcuts
                             if state.sidebar_visible {
@@ -53,7 +53,7 @@ fn main() {
                                     .width(4.0)
                                     .fill_y()
                                     .bg(colors.border)
-                                    .hover_bg(colors.accent)
+                                    .hover_bg(colors.highlight)
                                     .show(|_| {});
 
                                 if (splitter_res.hovered || state.active_resize_sidebar) && state.dragging_item.is_none() {
@@ -88,7 +88,7 @@ fn main() {
                                     .width(4.0)
                                     .fill_y()
                                     .bg(colors.border)
-                                    .hover_bg(colors.accent)
+                                    .hover_bg(colors.highlight)
                                     .show(|_| {});
 
                                 if (splitter_res.hovered || state.active_resize_details) && state.dragging_item.is_none() {
