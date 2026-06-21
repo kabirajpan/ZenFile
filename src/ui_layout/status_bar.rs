@@ -11,7 +11,7 @@ pub fn draw_status_bar(ui: &mut Ui, state: &mut FileManagerState) {
     ui.container()
         .fill_x()
         .height(24.0)
-        .bg(colors.bg_panel)
+        .bg(colors.bg_sidebar)
         .border(colors.border, 1.0)
         .padding(4.0, 15.0, 4.0, 15.0)
         .row()

@@ -7,6 +7,7 @@ pub enum ThemeMode {
 }
 
 pub const ACCENT_COLOR_OPTIONS: &[(&str, &str)] = &[
+    ("gray", "Gray"),
     ("yellow", "Yellow"),
     ("blue", "Blue"),
     ("green", "Green"),
@@ -17,7 +18,6 @@ pub const ACCENT_COLOR_OPTIONS: &[(&str, &str)] = &[
     ("turquoise", "Turquoise"),
     ("violet", "Violet"),
     ("lime", "Lime"),
-    ("gray", "Gray"),
     ("white", "White"),
 ];
 
@@ -33,9 +33,10 @@ pub const HIGHLIGHT_COLOR_OPTIONS: &[(&str, &str)] = &[
     ("turquoise", "Turquoise"),
     ("violet", "Violet"),
     ("lime", "Lime"),
+    ("white", "White"),
 ];
 
-pub fn named_color(name: &str) -> Color {
+pub fn named_color(name: &str, mode: ThemeMode) -> Color {
     match name {
         "yellow" => Color::rgb(255.0 / 255.0, 214.0 / 255.0, 0.0 / 255.0),
         "blue" => Color::rgb(52.0 / 255.0, 152.0 / 255.0, 219.0 / 255.0),
@@ -48,7 +49,10 @@ pub fn named_color(name: &str) -> Color {
         "violet" => Color::rgb(142.0 / 255.0, 68.0 / 255.0, 173.0 / 255.0),
         "lime" => Color::rgb(132.0 / 255.0, 204.0 / 255.0, 22.0 / 255.0),
         "gray" => Color::rgb(136.0 / 255.0, 136.0 / 255.0, 136.0 / 255.0),
-        "white" => Color::rgb(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0),
+        "white" => match mode {
+            ThemeMode::Dark => Color::rgb(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0),
+            ThemeMode::Light => Color::rgb(40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0),
+        },
         _ => Color::rgb(255.0 / 255.0, 214.0 / 255.0, 0.0 / 255.0),
     }
 }
@@ -56,15 +60,15 @@ pub fn named_color(name: &str) -> Color {
 fn resolve_highlight(name: &str, mode: ThemeMode) -> Color {
     if name == "gray" {
         match mode {
-            ThemeMode::Dark => Color::rgb(3.0 / 255.0, 3.0 / 255.0, 3.0 / 255.0),
-            ThemeMode::Light => Color::rgb(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0),
+            ThemeMode::Dark => Color::rgb(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0).with_alpha(0.08),
+            ThemeMode::Light => Color::rgb(0.0, 0.0, 0.0).with_alpha(0.08),
         }
     } else {
         let alpha = match mode {
             ThemeMode::Dark => 0.22,
             ThemeMode::Light => 0.18,
         };
-        named_color(name).with_alpha(alpha)
+        named_color(name, mode).with_alpha(alpha)
     }
 }
 
@@ -84,9 +88,9 @@ pub struct ThemeColors {
 
 impl ThemeColors {
     pub fn resolve(mode: ThemeMode, accent_name: &str, highlight_name: &str) -> Self {
-        let accent = named_color(accent_name);
+        let accent = named_color(accent_name, mode);
         let highlight = resolve_highlight(highlight_name, mode);
-        let bg_active = accent.with_alpha(0.15);
+        let bg_active = highlight;
 
         match mode {
             ThemeMode::Dark => Self {
@@ -102,16 +106,16 @@ impl ThemeColors {
                 text_dim: Color::rgb(68.0 / 255.0, 68.0 / 255.0, 68.0 / 255.0),
             },
             ThemeMode::Light => Self {
-                bg_base: Color::rgb(248.0 / 255.0, 248.0 / 255.0, 246.0 / 255.0),
+                bg_base: Color::rgb(240.0 / 255.0, 240.0 / 255.0, 242.0 / 255.0),
                 bg_panel: Color::WHITE,
-                bg_sidebar: Color::rgb(242.0 / 255.0, 242.0 / 255.0, 240.0 / 255.0),
+                bg_sidebar: Color::rgb(230.0 / 255.0, 230.0 / 255.0, 234.0 / 255.0),
                 bg_active,
-                border: Color::rgb(224.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0),
+                border: Color::rgb(210.0 / 255.0, 210.0 / 255.0, 215.0 / 255.0),
                 highlight,
                 accent,
-                text_primary: Color::rgb(26.0 / 255.0, 26.0 / 255.0, 26.0 / 255.0),
-                text_muted: Color::rgb(136.0 / 255.0, 136.0 / 255.0, 136.0 / 255.0),
-                text_dim: Color::rgb(170.0 / 255.0, 170.0 / 255.0, 170.0 / 255.0),
+                text_primary: Color::rgb(17.0 / 255.0, 17.0 / 255.0, 17.0 / 255.0),
+                text_muted: Color::rgb(90.0 / 255.0, 90.0 / 255.0, 95.0 / 255.0),
+                text_dim: Color::rgb(140.0 / 255.0, 140.0 / 255.0, 145.0 / 255.0),
             },
         }
     }

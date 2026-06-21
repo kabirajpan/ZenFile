@@ -17,7 +17,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
     ui.container()
         .full_width()
         .height(BAR_H)
-        .bg(colors.bg_panel)
+        .bg(colors.bg_sidebar)
         .border(colors.border, 1.0)
         .row()
         .valign(Align::Center)
@@ -250,16 +250,17 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         ui.sub_menu("Folder Color").show(|ui| {
                             let colors_list = [
                                 ("gray", "Gray"),
+                                ("yellow", "Yellow"),
                                 ("blue", "Blue"),
-                                ("red", "Red"),
                                 ("green", "Green"),
+                                ("red", "Red"),
                                 ("orange", "Orange"),
-                                ("pink", "Pink"),
                                 ("purple", "Purple"),
+                                ("pink", "Pink"),
                                 ("turquoise", "Turquoise"),
                                 ("violet", "Violet"),
-                                ("yellow", "Yellow"),
                                 ("lime", "Lime"),
+                                ("white", "White"),
                             ];
                             for (color_id, color_name) in colors_list {
                                 let is_active = state.folder_color == color_id;

@@ -181,6 +181,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
         .width(width)
         .fill_y()
         .column()
+        .bg(colors.bg_panel)
         .padding(main_padding, main_padding, main_padding, main_padding)
         .show(|ui| {
             let avail_w = ui.available_width;
@@ -266,10 +267,10 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             is_drop_hovered = is_drag_drop_hovered(ui, item_id);
                         }
 
-                        let bg_color = if is_selected {
-                            colors.bg_active
-                        } else if is_drop_hovered {
+                        let bg_color = if is_drop_hovered {
                             drop_target_bg(&colors, true)
+                        } else if is_selected {
+                            colors.bg_active
                         } else {
                             Color::TRANSPARENT
                         };
@@ -464,10 +465,10 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             is_drop_hovered = is_drag_drop_hovered(ui, item_id);
                         }
 
-                        let bg_color = if is_selected {
-                            colors.bg_active
-                        } else if is_drop_hovered {
+                        let bg_color = if is_drop_hovered {
                             drop_target_bg(&colors, true)
+                        } else if is_selected {
+                            colors.bg_active
                         } else {
                             Color::TRANSPARENT
                         };
