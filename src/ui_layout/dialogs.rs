@@ -130,6 +130,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
     }
 
     ui.container()
+        .id("context_menu_root")
         .overlay()
         .absolute(x, y)
         .width(menu_w)
@@ -147,7 +148,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 };
 
                 // Option: Open
-                let open_btn = draw_menu_item(ui, "Open", colors);
+                let open_btn = draw_menu_item(ui, "Open", colors, "ctx_open");
                 if open_btn.clicked {
                     if item.is_dir {
                         state.current_dir = item.path.clone();
@@ -167,7 +168,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
 
                 // Option: Open in Terminal (directories only)
                 if item.is_dir {
-                    let term_btn = draw_menu_item(ui, "Open in Terminal", colors);
+                    let term_btn = draw_menu_item(ui, "Open in Terminal", colors, "ctx_open_terminal");
                     if term_btn.clicked {
                         state.open_terminal_in(&item.path);
                         state.context_menu_pos = None;
@@ -177,7 +178,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Rename
-                let rename_btn = draw_menu_item(ui, "Rename...", colors);
+                let rename_btn = draw_menu_item(ui, "Rename...", colors, "ctx_rename");
                 if rename_btn.clicked {
                     super::common::start_rename(ui, state, item.path.clone(), item.name.clone());
                     state.context_menu_pos = None;
@@ -186,7 +187,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Copy
-                let copy_btn = draw_menu_item(ui, "Copy", colors);
+                let copy_btn = draw_menu_item(ui, "Copy", colors, "ctx_copy");
                 if copy_btn.clicked {
                     state.clipboard = Some((item.path.clone(), false));
                     state.context_menu_pos = None;
@@ -195,7 +196,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Copy Path
-                let copy_path_btn = draw_menu_item(ui, "Copy Path", colors);
+                let copy_path_btn = draw_menu_item(ui, "Copy Path", colors, "ctx_copy_path");
                 if copy_path_btn.clicked {
                     state.copy_path_to_clipboard(&item.path.to_string_lossy());
                     state.context_menu_pos = None;
@@ -204,7 +205,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Cut
-                let cut_btn = draw_menu_item(ui, "Cut", colors);
+                let cut_btn = draw_menu_item(ui, "Cut", colors, "ctx_cut");
                 if cut_btn.clicked {
                     state.clipboard = Some((item.path.clone(), true));
                     state.context_menu_pos = None;
@@ -214,7 +215,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
 
                 // Option: Paste
                 let can_paste = state.clipboard.is_some();
-                let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste);
+                let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste, "ctx_paste");
                 if paste_btn.clicked && can_paste {
                     if let Some((src_path, is_cut)) = &state.clipboard {
                         let dest_path = state.current_dir.join(src_path.file_name().unwrap());
@@ -241,7 +242,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 ui.spacing(4.0);
 
                 // Option: Get Info
-                let info_btn = draw_menu_item(ui, "Get Info", colors);
+                let info_btn = draw_menu_item(ui, "Get Info", colors, "ctx_get_info");
                 if info_btn.clicked {
                     state.info_window_target = Some(target_idx);
                     state.info_window_open = true;
@@ -252,7 +253,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Move to Trash
-                let trash_btn = draw_menu_item_danger(ui, "Move to Trash", colors);
+                let trash_btn = draw_menu_item_danger(ui, "Move to Trash", colors, "ctx_move_to_trash");
                 if trash_btn.clicked {
                     let path = item.path.clone();
                     std::thread::spawn(move || {
@@ -301,6 +302,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                         ];
                         for (tag_name, tag_color) in tag_options {
                             let dot = ui.container()
+                                .id(format!("tag_{}", tag_name))
                                 .width(12.0)
                                 .height(12.0)
                                 .radius_all(6.0)
@@ -324,7 +326,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
             } else {
                 // Background context menu
                 // Option: New Folder
-                let new_folder_btn = draw_menu_item(ui, "New Folder", colors);
+                let new_folder_btn = draw_menu_item(ui, "New Folder", colors, "ctx_new_folder");
                 if new_folder_btn.clicked {
                     let mut i = 1;
                     let mut new_dir = state.current_dir.join("New Folder");
@@ -343,7 +345,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: New File
-                let new_file_btn = draw_menu_item(ui, "New File", colors);
+                let new_file_btn = draw_menu_item(ui, "New File", colors, "ctx_new_file");
                 if new_file_btn.clicked {
                     let mut i = 1;
                     let mut new_file = state.current_dir.join("New File.txt");
@@ -363,7 +365,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
 
                 // Option: Paste
                 let can_paste = state.clipboard.is_some();
-                let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste);
+                let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste, "ctx_paste");
                 if paste_btn.clicked && can_paste {
                     if let Some((src_path, is_cut)) = &state.clipboard {
                         let dest_path = state.current_dir.join(src_path.file_name().unwrap());
@@ -385,7 +387,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Open in Terminal
-                let term_btn = draw_menu_item(ui, "Open in Terminal", colors);
+                let term_btn = draw_menu_item(ui, "Open in Terminal", colors, "ctx_open_terminal_bg");
                 if term_btn.clicked {
                     state.open_terminal_in(&state.current_dir);
                     state.context_menu_pos = None;
@@ -394,7 +396,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 }
 
                 // Option: Refresh
-                let refresh_btn = draw_menu_item(ui, "Refresh", colors);
+                let refresh_btn = draw_menu_item(ui, "Refresh", colors, "ctx_refresh");
                 if refresh_btn.clicked {
                     state.scan_current_dir();
                     state.context_menu_pos = None;
@@ -405,8 +407,9 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
         });
 }
 
-fn draw_menu_item(ui: &mut Ui, label: &str, colors: ThemeColors) -> Response {
+fn draw_menu_item(ui: &mut Ui, label: &str, colors: ThemeColors, id_str: &str) -> Response {
     ui.container()
+        .id(id_str)
         .fill_x()
         .height(26.0)
         .row()
@@ -423,8 +426,9 @@ fn draw_menu_item(ui: &mut Ui, label: &str, colors: ThemeColors) -> Response {
         })
 }
 
-fn draw_menu_item_disabled(ui: &mut Ui, label: &str, colors: ThemeColors, disabled: bool) -> Response {
+fn draw_menu_item_disabled(ui: &mut Ui, label: &str, colors: ThemeColors, disabled: bool, id_str: &str) -> Response {
     let mut c = ui.container()
+        .id(id_str)
         .fill_x()
         .height(26.0)
         .row()
@@ -443,8 +447,9 @@ fn draw_menu_item_disabled(ui: &mut Ui, label: &str, colors: ThemeColors, disabl
     })
 }
 
-fn draw_menu_item_danger(ui: &mut Ui, label: &str, colors: ThemeColors) -> Response {
+fn draw_menu_item_danger(ui: &mut Ui, label: &str, colors: ThemeColors, id_str: &str) -> Response {
     ui.container()
+        .id(id_str)
         .fill_x()
         .height(26.0)
         .row()

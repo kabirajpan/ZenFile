@@ -60,7 +60,7 @@ fn main() {
                                     ui.cursor_icon = CursorIcon::ColResize;
                                 }
 
-                                if splitter_res.pressed {
+                                if splitter_res.pressed && state.drag_select_start.is_none() {
                                     state.active_resize_sidebar = true;
                                 }
                                 if !ui.mouse_down {
@@ -95,7 +95,7 @@ fn main() {
                                     ui.cursor_icon = CursorIcon::ColResize;
                                 }
 
-                                if splitter_res.pressed {
+                                if splitter_res.pressed && state.drag_select_start.is_none() {
                                     state.active_resize_details = true;
                                 }
                                 if !ui.mouse_down {

@@ -82,6 +82,7 @@ pub struct FileManagerState {
     pub drag_start_pos: Option<(f32, f32)>,
     pub drag_select_start: Option<(f32, f32)>,
     pub drag_select_current: Option<(f32, f32)>,
+    pub item_rects: Vec<(PathBuf, f32, f32, f32, f32)>, // (path, x, y, w, h) screen rects
 }
 
 impl FileManagerState {
@@ -134,6 +135,7 @@ impl FileManagerState {
             drag_start_pos: None,
             drag_select_start: None,
             drag_select_current: None,
+            item_rects: Vec::new(),
         };
 
         state.load_tags();

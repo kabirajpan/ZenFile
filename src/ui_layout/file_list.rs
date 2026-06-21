@@ -157,6 +157,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let mut item_clicked = false;
     let mut item_pressed = false;
     let mut clicked_idx = None;
+    state.item_rects.clear();
 
     let list_resp = ui.container()
         .width(width)
@@ -249,7 +250,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .valign(Align::Center)
                             .padding(4.0, 12.0, 4.0, 12.0)
                             .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_hover { colors.border } else { Color::TRANSPARENT })
+                            .hover_bg(if show_hover {
+                                if is_selected { colors.accent.with_alpha(0.25) } else { colors.border }
+                            } else { Color::TRANSPARENT })
                             .radius_all(4.0)
                             .clip(true)
                             .show(|ui| {
@@ -311,6 +314,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 });
                             });
 
+                        // Record screen position for marquee selection
+                        if let Some(rect) = ui.next_screen_layout_cache.get(&ui.id_log[ui.id_log.len().saturating_sub(1)]) {
+                            state.item_rects.push((item.path.clone(), rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
+                        }
+
                         if resp.pressed {
                             item_pressed = true;
                         }
@@ -333,18 +341,18 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             }
                         }
 
-                        // Drag Detection with Threshold
-                        if resp.pressed && state.drag_pressed_item.is_none() {
+                        // Drag Detection with Threshold (only when no marquee active)
+                        if resp.pressed && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
                             state.drag_pressed_item = Some(item.path.clone());
                             state.drag_start_pos = Some((ui.mouse_x, ui.mouse_y));
                         }
 
-                        if ui.mouse_down && state.dragging_item.is_none() {
+                        if ui.mouse_down && state.dragging_item.is_none() && state.drag_select_start.is_none() {
                             if let (Some(path), Some(start_pos)) = (&state.drag_pressed_item, state.drag_start_pos) {
                                 if path == &item.path {
                                     let dx = ui.mouse_x - start_pos.0;
                                     let dy = ui.mouse_y - start_pos.1;
-                                    if dx.abs() > 5.0 || dy.abs() > 5.0 {
+                                    if dx.abs() > 12.0 || dy.abs() > 12.0 {
                                         state.dragging_item = Some(path.clone());
                                         ui.request_redraw();
                                     }
@@ -402,7 +410,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .valign(Align::Center)
                             .gap(2.0)
                             .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_hover { colors.border } else { Color::TRANSPARENT })
+                            .hover_bg(if show_hover {
+                                if is_selected { colors.accent.with_alpha(0.25) } else { colors.border }
+                            } else { Color::TRANSPARENT })
                             .radius_all(6.0)
                             .padding(2.0, 2.0, 2.0, 2.0)
                             .clip(true)
@@ -452,6 +462,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 }
                             });
 
+                        // Record screen position for marquee selection
+                        if let Some(rect) = ui.next_screen_layout_cache.get(&ui.id_log[ui.id_log.len().saturating_sub(1)]) {
+                            state.item_rects.push((item.path.clone(), rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
+                        }
+
                         if resp.pressed {
                             item_pressed = true;
                         }
@@ -474,18 +489,18 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             }
                         }
 
-                        // Drag Detection with Threshold
-                        if resp.pressed && state.drag_pressed_item.is_none() {
+                        // Drag Detection with Threshold (only when no marquee active)
+                        if resp.pressed && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
                             state.drag_pressed_item = Some(item.path.clone());
                             state.drag_start_pos = Some((ui.mouse_x, ui.mouse_y));
                         }
 
-                        if ui.mouse_down && state.dragging_item.is_none() {
+                        if ui.mouse_down && state.dragging_item.is_none() && state.drag_select_start.is_none() {
                             if let (Some(path), Some(start_pos)) = (&state.drag_pressed_item, state.drag_start_pos) {
                                 if path == &item.path {
                                     let dx = ui.mouse_x - start_pos.0;
                                     let dy = ui.mouse_y - start_pos.1;
-                                    if dx.abs() > 5.0 || dy.abs() > 5.0 {
+                                    if dx.abs() > 12.0 || dy.abs() > 12.0 {
                                         state.dragging_item = Some(path.clone());
                                         ui.request_redraw();
                                     }
@@ -510,15 +525,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                 item_clicked = true;
                 let now = std::time::Instant::now();
                 let is_double = if let (Some(last_time), Some(last_idx)) = (state.last_click_time, state.last_clicked_idx) {
-                    last_idx == idx && now.duration_since(last_time).as_millis() < 300
+                    let elapsed = now.duration_since(last_time).as_millis();
+                    last_idx == idx && elapsed >= 80 && elapsed < 400
                 } else {
                     false
                 };
-                
-                state.last_click_time = Some(now);
-                state.last_clicked_idx = Some(idx);
 
                 if is_double {
+                    state.last_click_time = None;
+                    state.last_clicked_idx = None;
                     let target_path = filtered_items[idx].path.clone();
                     if filtered_items[idx].is_dir {
                         state.change_dir(target_path);
@@ -526,6 +541,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         open_file(&target_path);
                     }
                 } else {
+                    state.last_click_time = Some(now);
+                    state.last_clicked_idx = Some(idx);
                     // Selection with keyboard modifiers
                     if state.ctrl_pressed {
                         state.toggle_select(idx);
@@ -544,7 +561,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let ended_drag_select = !ui.mouse_down && state.drag_select_start.is_some();
 
     // Handle background drag-selection start
-    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() {
+    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() {
         if state.drag_select_start.is_none() {
             state.drag_select_start = Some((ui.mouse_x, ui.mouse_y));
             state.drag_select_current = Some((ui.mouse_x, ui.mouse_y));
@@ -566,21 +583,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
             let h = (start.1 - curr.1).abs();
 
             let mut intersected = std::collections::HashSet::new();
-            for item in &filtered_items {
-                let mut hasher = std::collections::hash_map::DefaultHasher::new();
-                item.path.hash(&mut hasher);
-                let item_id = Id::from_u64(hasher.finish());
-                if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
-                    let rx = rect.origin.x + ui.offset_x;
-                    let ry = rect.origin.y + ui.offset_y;
-                    let rw = rect.size.width;
-                    let rh = rect.size.height;
-                    
-                    let x_overlap = rx < x1 + w && rx + rw > x1;
-                    let y_overlap = ry < y1 + h && ry + rh > y1;
-                    if x_overlap && y_overlap {
-                        intersected.insert(item.path.clone());
-                    }
+            for (path, rx, ry, rw, rh) in &state.item_rects {
+                let x_overlap = *rx < x1 + w && *rx + *rw > x1;
+                let y_overlap = *ry < y1 + h && *ry + *rh > y1;
+                if x_overlap && y_overlap {
+                    intersected.insert(path.clone());
                 }
             }
 
@@ -629,6 +636,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
             }
         } else if !item_clicked && !ended_drag_select {
             // Left click empty area clears selection
+            state.last_click_time = None;
+            state.last_clicked_idx = None;
             state.clear_selection();
             ui.request_redraw();
         }
@@ -642,36 +651,73 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
         ui.request_redraw();
     }
 
-    // Render Drag Thumbnail tracking cursor
-    if let Some(drag_path) = &state.dragging_item {
-        let filename = drag_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-        let is_dir = drag_path.is_dir();
-        let icon_path = if is_dir {
-            get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
-        } else {
-            let extension = drag_path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
-            let (_, category) = crate::state::get_file_info(drag_path);
-            get_item_icon_path(&state.icon_theme, &category, &extension)
-        };
+    // Render Drag Thumbnail tracking cursor (only when NOT in marquee selection)
+    if state.drag_select_start.is_none() {
+        if let Some(drag_path) = &state.dragging_item {
+            let filename = drag_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            let is_dir = drag_path.is_dir();
+            let icon_path = if is_dir {
+                get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+            } else {
+                let extension = drag_path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+                let (_, category) = crate::state::get_file_info(drag_path);
+                get_item_icon_path(&state.icon_theme, &category, &extension)
+            };
 
-        let mouse_x = ui.mouse_x;
-        let mouse_y = ui.mouse_y;
-        ui.container()
-            .overlay()
-            .absolute(mouse_x + 12.0, mouse_y + 12.0)
-            .bg(colors.bg_panel.with_alpha(0.85))
-            .border(colors.accent, 1.0)
-            .radius_all(6.0)
-            .padding(4.0, 8.0, 4.0, 8.0)
-            .row()
-            .gap(6.0)
-            .valign(Align::Center)
-            .show(|ui| {
-                ui.image(ImageSource::Path(icon_path))
-                    .size(16.0, 16.0)
-                    .fit(ObjectFit::Contain)
-                    .show();
-                ui.text(&filename).size(10.0).color(colors.text_primary).show();
-            });
+            let mouse_x = ui.mouse_x;
+            let mouse_y = ui.mouse_y;
+
+            if state.view_mode == ViewMode::List {
+                ui.container()
+                    .overlay()
+                    .absolute(mouse_x - 90.0, mouse_y - 14.0)
+                    .width(180.0)
+                    .height(28.0)
+                    .bg(Color::TRANSPARENT)
+                    .padding(4.0, 12.0, 4.0, 12.0)
+                    .row()
+                    .gap(8.0)
+                    .valign(Align::Center)
+                    .show(|ui| {
+                        ui.image(ImageSource::Path(icon_path))
+                            .size(16.0, 16.0)
+                            .fit(ObjectFit::Contain)
+                            .show();
+                        ui.text(&filename)
+                            .size(11.5)
+                            .color(colors.text_primary)
+                            .show();
+                    });
+            } else {
+                let (tile_w, tile_h, icon_size, name_max, font_size) = match state.view_mode {
+                    ViewMode::Medium     => (76.0_f32,  68.0_f32,  40.0_f32, 10, 9.5_f32),
+                    ViewMode::Large      => (112.0_f32, 96.0_f32,  64.0_f32, 14, 10.5_f32),
+                    ViewMode::ExtraLarge => (152.0_f32, 132.0_f32, 96.0_f32, 18, 11.0_f32),
+                    _ => (76.0_f32, 68.0_f32, 40.0_f32, 10, 9.5_f32), // Fallback
+                };
+                let display_name = truncate_filename(&filename, name_max);
+                ui.container()
+                    .overlay()
+                    .absolute(mouse_x - tile_w / 2.0, mouse_y - tile_h / 2.0)
+                    .width(tile_w)
+                    .height(tile_h)
+                    .bg(Color::TRANSPARENT)
+                    .padding(2.0, 2.0, 2.0, 2.0)
+                    .column()
+                    .align(Align::Center)
+                    .valign(Align::Center)
+                    .gap(2.0)
+                    .show(|ui| {
+                        ui.image(ImageSource::Path(icon_path))
+                            .size(icon_size, icon_size)
+                            .fit(ObjectFit::Contain)
+                            .show();
+                        ui.text(&display_name)
+                            .size(font_size)
+                            .color(colors.text_primary)
+                            .show();
+                    });
+            }
+        }
     }
 }

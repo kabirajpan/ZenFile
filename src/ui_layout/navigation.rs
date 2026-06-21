@@ -196,6 +196,7 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                 .show(|ui| {
                     ui.text(NF_FA_SEARCH).color(colors.text_muted).size(11.0).show();
                     
+                    let prev_query = state.search_query.clone();
                     ui.input(&mut state.search_query, "search_input")
                         .width(170.0)
                         .min_width(0.0)
@@ -206,6 +207,12 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         .radius_all(4.0)
                         .padding(3.0, 6.0, 3.0, 6.0)
                         .show();
+
+                    if state.search_query != prev_query {
+                        state.selected_paths.clear();
+                        state.select_anchor = None;
+                        ui.request_redraw();
+                    }
                 });
 
             ui.spacing(12.0);

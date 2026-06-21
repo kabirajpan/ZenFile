@@ -37,7 +37,7 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
                         .fill_x()
                         .padding(6.0, 10.0, 6.0, 10.0)
                         .bg(if is_active { colors.bg_active } else { Color::TRANSPARENT })
-                        .hover_bg(colors.border)
+                        .hover_bg(if is_active { colors.accent.with_alpha(0.25) } else { colors.border })
                         .radius_all(6.0)
                         .show(|ui| {
                             ui.text(icon)
