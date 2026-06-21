@@ -90,6 +90,24 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             ui.request_redraw();
                         }
                     }
+                    winit::keyboard::KeyCode::KeyC => {
+                        if state.ctrl_pressed {
+                            state.copy_selected();
+                            ui.request_redraw();
+                        }
+                    }
+                    winit::keyboard::KeyCode::KeyX => {
+                        if state.ctrl_pressed {
+                            state.cut_selected();
+                            ui.request_redraw();
+                        }
+                    }
+                    winit::keyboard::KeyCode::KeyV => {
+                        if state.ctrl_pressed {
+                            state.paste_clipboard();
+                            ui.request_redraw();
+                        }
+                    }
                     winit::keyboard::KeyCode::Escape => {
                         state.clear_selection();
                         ui.request_redraw();
@@ -250,9 +268,13 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .valign(Align::Center)
                             .padding(4.0, 12.0, 4.0, 12.0)
                             .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_hover {
-                                if is_selected { colors.accent.with_alpha(0.25) } else { colors.border }
-                            } else { Color::TRANSPARENT })
+                            .hover_bg(if is_selected {
+                                colors.bg_active
+                            } else if show_hover {
+                                colors.border
+                            } else {
+                                Color::TRANSPARENT
+                            })
                             .radius_all(4.0)
                             .clip(true)
                             .show(|ui| {
@@ -315,7 +337,14 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             });
 
                         // Record screen position for marquee selection
-                        if let Some(rect) = ui.next_screen_layout_cache.get(&ui.id_log[ui.id_log.len().saturating_sub(1)]) {
+                        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                        item_id.hash(&mut hasher);
+                        if let Some(parent) = ui.semantic_stack.last() {
+                            parent.hash(&mut hasher);
+                        }
+                        let resolved_item_id = Id::from_u64(hasher.finish());
+
+                        if let Some(rect) = ui.next_screen_layout_cache.get(&resolved_item_id) {
                             state.item_rects.push((item.path.clone(), rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
                         }
 
@@ -325,6 +354,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                         if resp.clicked {
                             if ui.right_clicked {
+                                println!("DEBUG ITEM RIGHT CLICK (list): path={:?}", item.path);
                                 if !state.selected_paths.contains(&item.path) {
                                     state.select_single(idx);
                                 }
@@ -332,7 +362,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 state.context_menu_target = state.items.iter().position(|it| it.path == item.path);
                                 item_right_clicked = true;
                                 ui.request_redraw();
-                            } else if !is_menu_open {
+                            } else if state.drag_select_start.is_none() {
+                                println!("DEBUG ITEM LEFT CLICK (list): path={:?}", item.path);
                                 if state.renaming_item.as_ref() == Some(&item.path) {
                                     // Do nothing, let input consume click
                                 } else {
@@ -368,7 +399,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         // Drop Detection onto folder
                         if item.is_dir && resp.hovered && !ui.mouse_down {
                             if let Some(src_path) = state.dragging_item.clone() {
-                                state.move_item(&src_path, &item.path);
+                                if state.selected_paths.contains(&src_path) {
+                                    let paths: Vec<_> = state.selected_paths.iter().cloned().collect();
+                                    for p in paths {
+                                        state.move_item(&p, &item.path);
+                                    }
+                                    state.selected_paths.clear();
+                                } else {
+                                    state.move_item(&src_path, &item.path);
+                                }
                                 state.dragging_item = None;
                                 state.drag_pressed_item = None;
                                 state.drag_start_pos = None;
@@ -416,9 +455,13 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .valign(Align::Center)
                             .gap(2.0)
                             .bg(if is_selected { colors.bg_active } else { Color::TRANSPARENT })
-                            .hover_bg(if show_hover {
-                                if is_selected { colors.accent.with_alpha(0.25) } else { colors.border }
-                            } else { Color::TRANSPARENT })
+                            .hover_bg(if is_selected {
+                                colors.bg_active
+                            } else if show_hover {
+                                colors.border
+                            } else {
+                                Color::TRANSPARENT
+                            })
                             .radius_all(6.0)
                             .padding(2.0, 2.0, 2.0, 2.0)
                             .clip(true)
@@ -469,7 +512,14 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             });
 
                         // Record screen position for marquee selection
-                        if let Some(rect) = ui.next_screen_layout_cache.get(&ui.id_log[ui.id_log.len().saturating_sub(1)]) {
+                        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                        item_id.hash(&mut hasher);
+                        if let Some(parent) = ui.semantic_stack.last() {
+                            parent.hash(&mut hasher);
+                        }
+                        let resolved_item_id = Id::from_u64(hasher.finish());
+
+                        if let Some(rect) = ui.next_screen_layout_cache.get(&resolved_item_id) {
                             state.item_rects.push((item.path.clone(), rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
                         }
 
@@ -479,6 +529,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                         if resp.clicked {
                             if ui.right_clicked {
+                                println!("DEBUG ITEM RIGHT CLICK (grid): path={:?}", item.path);
                                 if !state.selected_paths.contains(&item.path) {
                                     state.select_single(idx);
                                 }
@@ -486,7 +537,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 state.context_menu_target = state.items.iter().position(|it| it.path == item.path);
                                 item_right_clicked = true;
                                 ui.request_redraw();
-                            } else if !is_menu_open {
+                            } else if state.drag_select_start.is_none() {
+                                println!("DEBUG ITEM LEFT CLICK (grid): path={:?}", item.path);
                                 if state.renaming_item.as_ref() == Some(&item.path) {
                                     // Do nothing, let input consume click
                                 } else {
@@ -522,7 +574,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         // Drop Detection onto folder in grid
                         if item.is_dir && resp.hovered && !ui.mouse_down {
                             if let Some(src_path) = state.dragging_item.clone() {
-                                state.move_item(&src_path, &item.path);
+                                if state.selected_paths.contains(&src_path) {
+                                    let paths: Vec<_> = state.selected_paths.iter().cloned().collect();
+                                    for p in paths {
+                                        state.move_item(&p, &item.path);
+                                    }
+                                    state.selected_paths.clear();
+                                } else {
+                                    state.move_item(&src_path, &item.path);
+                                }
                                 state.dragging_item = None;
                                 state.drag_pressed_item = None;
                                 state.drag_start_pos = None;
@@ -573,13 +633,14 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let ended_drag_select = !ui.mouse_down && state.drag_select_start.is_some();
 
     // Handle background drag-selection start
-    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() {
+    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() && state.context_menu_pos.is_none() {
         if state.drag_select_start.is_none() {
             state.drag_select_start = Some((ui.mouse_x, ui.mouse_y));
             state.drag_select_current = Some((ui.mouse_x, ui.mouse_y));
             if !state.ctrl_pressed && !state.shift_pressed {
                 state.selected_paths.clear();
             }
+            println!("DEBUG MARQUEE START: pos=({}, {})", ui.mouse_x, ui.mouse_y);
             ui.request_redraw();
         }
     }
@@ -603,6 +664,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                 }
             }
 
+            let old_paths: std::collections::HashSet<_> = state.selected_paths.iter().cloned().collect();
+            if intersected != old_paths {
+                println!("DEBUG MARQUEE UPDATE: intersected={:?}", intersected);
+            }
+
             if state.ctrl_pressed {
                 for p in intersected {
                     state.selected_paths.insert(p);
@@ -616,6 +682,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
     // Drag-selection end
     if ended_drag_select {
+        println!("DEBUG MARQUEE END: final_selection={:?}", state.selected_paths);
         state.drag_select_start = None;
         state.drag_select_current = None;
         ui.request_redraw();
@@ -641,13 +708,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     if list_resp.clicked {
         if ui.right_clicked {
             if !item_right_clicked {
+                println!("DEBUG EMPTY SPACE RIGHT CLICK");
                 state.clear_selection();
                 state.context_menu_pos = Some((ui.mouse_x, ui.mouse_y));
                 state.context_menu_target = None;
                 ui.request_redraw();
             }
-        } else if !item_clicked && !ended_drag_select {
+        } else if !item_clicked && !ended_drag_select && state.context_menu_pos.is_none() {
             // Left click empty area clears selection
+            println!("DEBUG EMPTY SPACE LEFT CLICK");
             state.last_click_time = None;
             state.last_clicked_idx = None;
             state.clear_selection();

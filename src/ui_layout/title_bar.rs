@@ -101,36 +101,17 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         }
                     });
                     ui.menu("Edit").show(|ui| {
-                        let has_selection = state.selected_idx.is_some();
+                        let has_selection = !state.selected_paths.is_empty();
                         if ui.menu_item("Cut").shortcut("Ctrl+X").show().clicked && has_selection {
-                            if let Some(idx) = state.selected_idx {
-                                if idx < state.items.len() {
-                                    state.clipboard = Some((state.items[idx].path.clone(), true));
-                                }
-                            }
+                            state.cut_selected();
                         }
                         if ui.menu_item("Copy").shortcut("Ctrl+C").show().clicked && has_selection {
-                            if let Some(idx) = state.selected_idx {
-                                if idx < state.items.len() {
-                                    state.clipboard = Some((state.items[idx].path.clone(), false));
-                                }
-                            }
+                            state.copy_selected();
                         }
                         let has_clip = state.clipboard.is_some();
                         if ui.menu_item("Paste").shortcut("Ctrl+V").show().clicked && has_clip {
-                            if let Some((src_path, is_cut)) = state.clipboard.clone() {
-                                if let Some(filename) = src_path.file_name() {
-                                    let dest_path = state.current_dir.join(filename);
-                                    if is_cut {
-                                        let _ = std::fs::rename(&src_path, &dest_path);
-                                        state.clipboard = None;
-                                    } else {
-                                        let _ = std::fs::copy(&src_path, &dest_path);
-                                    }
-                                    state.scan_current_dir();
-                                    ui.request_redraw();
-                                }
-                            }
+                            state.paste_clipboard();
+                            ui.request_redraw();
                         }
                     });
                     ui.menu("View").show(|ui| {

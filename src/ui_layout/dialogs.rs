@@ -150,16 +150,25 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 // Option: Open
                 let open_btn = draw_menu_item(ui, "Open", colors, "ctx_open");
                 if open_btn.clicked {
-                    if item.is_dir {
-                        state.current_dir = item.path.clone();
-                        state.history.truncate(state.history_idx + 1);
-                        state.history.push(item.path.clone());
-                        state.history_idx = state.history.len() - 1;
-                        state.scan_current_dir();
+                    let mut paths_to_open = Vec::new();
+                    if state.selected_paths.contains(&item.path) {
+                        paths_to_open = state.selected_paths.iter().cloned().collect();
                     } else {
-                        let _ = std::process::Command::new("xdg-open")
-                            .arg(&item.path)
-                            .spawn();
+                        paths_to_open.push(item.path.clone());
+                    }
+
+                    for path in paths_to_open {
+                        if path.is_dir() {
+                            state.current_dir = path.clone();
+                            state.history.truncate(state.history_idx + 1);
+                            state.history.push(path.clone());
+                            state.history_idx = state.history.len() - 1;
+                            state.scan_current_dir();
+                        } else {
+                            let _ = std::process::Command::new("xdg-open")
+                                .arg(&path)
+                                .spawn();
+                        }
                     }
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
@@ -189,7 +198,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 // Option: Copy
                 let copy_btn = draw_menu_item(ui, "Copy", colors, "ctx_copy");
                 if copy_btn.clicked {
-                    state.clipboard = Some((item.path.clone(), false));
+                    state.copy_selected();
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
@@ -198,7 +207,18 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 // Option: Copy Path
                 let copy_path_btn = draw_menu_item(ui, "Copy Path", colors, "ctx_copy_path");
                 if copy_path_btn.clicked {
-                    state.copy_path_to_clipboard(&item.path.to_string_lossy());
+                    let mut paths_to_copy = Vec::new();
+                    if state.selected_paths.contains(&item.path) {
+                        paths_to_copy = state.selected_paths.iter().cloned().collect();
+                    } else {
+                        paths_to_copy.push(item.path.clone());
+                    }
+                    paths_to_copy.sort();
+                    let paths_str = paths_to_copy.iter()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    state.copy_path_to_clipboard(&paths_str);
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
@@ -207,7 +227,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 // Option: Cut
                 let cut_btn = draw_menu_item(ui, "Cut", colors, "ctx_cut");
                 if cut_btn.clicked {
-                    state.clipboard = Some((item.path.clone(), true));
+                    state.cut_selected();
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
@@ -217,20 +237,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 let can_paste = state.clipboard.is_some();
                 let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste, "ctx_paste");
                 if paste_btn.clicked && can_paste {
-                    if let Some((src_path, is_cut)) = &state.clipboard {
-                        let dest_path = state.current_dir.join(src_path.file_name().unwrap());
-                        if *is_cut {
-                            let _ = std::fs::rename(src_path, &dest_path);
-                            state.clipboard = None;
-                        } else {
-                            let _ = std::process::Command::new("cp")
-                                .arg("-r")
-                                .arg(src_path)
-                                .arg(&dest_path)
-                                .status();
-                        }
-                        state.scan_current_dir();
-                    }
+                    state.paste_clipboard();
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
@@ -255,24 +262,34 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 // Option: Move to Trash
                 let trash_btn = draw_menu_item_danger(ui, "Move to Trash", colors, "ctx_move_to_trash");
                 if trash_btn.clicked {
-                    let path = item.path.clone();
+                    let mut paths_to_trash = Vec::new();
+                    if state.selected_paths.contains(&item.path) {
+                        paths_to_trash = state.selected_paths.iter().cloned().collect();
+                    } else {
+                        paths_to_trash.push(item.path.clone());
+                    }
+
+                    let paths_to_trash_thread = paths_to_trash.clone();
                     std::thread::spawn(move || {
-                        let _ = std::process::Command::new("gio")
-                            .arg("trash")
-                            .arg(&path)
-                            .status()
-                            .map(|s| s.success())
-                            .or_else(|_| {
-                                if path.is_dir() {
-                                    std::fs::remove_dir_all(&path).map(|_| true)
-                                } else {
-                                    std::fs::remove_file(&path).map(|_| true)
-                                }
-                            });
+                        for path in &paths_to_trash_thread {
+                            let _ = std::process::Command::new("gio")
+                                .arg("trash")
+                                .arg(path)
+                                .status()
+                                .map(|s| s.success())
+                                .or_else(|_| {
+                                    if path.is_dir() {
+                                        std::fs::remove_dir_all(path).map(|_| true)
+                                    } else {
+                                        std::fs::remove_file(path).map(|_| true)
+                                    }
+                                });
+                        }
                     });
-                    
-                    state.items.remove(target_idx);
-                    state.selected_idx = None;
+
+                    let paths_set: std::collections::HashSet<_> = paths_to_trash.into_iter().collect();
+                    state.items.retain(|it| !paths_set.contains(&it.path));
+                    state.clear_selection();
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
@@ -310,10 +327,19 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                                 .hover_bg(Color::WHITE)
                                 .show(|_| {});
                             if dot.clicked {
-                                if tag_name == "none" {
-                                    state.file_tags.remove(&item.path);
+                                let mut paths_to_tag = Vec::new();
+                                if state.selected_paths.contains(&item.path) {
+                                    paths_to_tag = state.selected_paths.iter().cloned().collect();
                                 } else {
-                                    state.file_tags.insert(item.path.clone(), tag_name.to_string());
+                                    paths_to_tag.push(item.path.clone());
+                                }
+
+                                for path in paths_to_tag {
+                                    if tag_name == "none" {
+                                        state.file_tags.remove(&path);
+                                    } else {
+                                        state.file_tags.insert(path.clone(), tag_name.to_string());
+                                    }
                                 }
                                 state.save_tags();
                                 state.context_menu_pos = None;
@@ -367,20 +393,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                 let can_paste = state.clipboard.is_some();
                 let paste_btn = draw_menu_item_disabled(ui, "Paste", colors, !can_paste, "ctx_paste");
                 if paste_btn.clicked && can_paste {
-                    if let Some((src_path, is_cut)) = &state.clipboard {
-                        let dest_path = state.current_dir.join(src_path.file_name().unwrap());
-                        if *is_cut {
-                            let _ = std::fs::rename(src_path, &dest_path);
-                            state.clipboard = None;
-                        } else {
-                            let _ = std::process::Command::new("cp")
-                                .arg("-r")
-                                .arg(src_path)
-                                .arg(&dest_path)
-                                .status();
-                        }
-                        state.scan_current_dir();
-                    }
+                    state.paste_clipboard();
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();

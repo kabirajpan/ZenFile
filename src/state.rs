@@ -55,7 +55,7 @@ pub struct FileManagerState {
     pub rename_buffer: String,
     pub delete_confirm: Option<PathBuf>,
     pub sidebar_visible: bool,
-    pub clipboard: Option<(PathBuf, bool)>, // (Path, is_cut)
+    pub clipboard: Option<(Vec<PathBuf>, bool)>, // (Paths, is_cut)
     pub view_mode: ViewMode,
     pub sort_by: SortBy,
     pub sort_order: SortOrder,
@@ -516,6 +516,72 @@ impl FileManagerState {
                 let _ = std::fs::rename(src, &dest);
                 self.scan_current_dir();
             }
+        }
+    }
+
+    /// Copies selected files to state.clipboard
+    pub fn copy_selected(&mut self) {
+        if !self.selected_paths.is_empty() {
+            let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
+            println!("DEBUG COPY_SELECTED: paths={:?}", paths);
+            self.clipboard = Some((paths, false));
+        }
+    }
+
+    /// Cuts selected files to state.clipboard
+    pub fn cut_selected(&mut self) {
+        if !self.selected_paths.is_empty() {
+            let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
+            println!("DEBUG CUT_SELECTED: paths={:?}", paths);
+            self.clipboard = Some((paths, true));
+        }
+    }
+
+    /// Pastes files currently in state.clipboard to self.current_dir
+    pub fn paste_clipboard(&mut self) {
+        if let Some((src_paths, is_cut)) = self.clipboard.clone() {
+            println!("DEBUG PASTE_CLIPBOARD: src_paths={:?} is_cut={}", src_paths, is_cut);
+            for src_path in src_paths {
+                if !src_path.exists() {
+                    continue;
+                }
+                if let Some(filename) = src_path.file_name() {
+                    let mut dest_path = self.current_dir.join(filename);
+                    if dest_path == src_path {
+                        if is_cut {
+                            // Moving to same location is a no-op
+                            continue;
+                        } else {
+                            // Copying to same location should generate a unique name
+                            let stem = dest_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                            let ext = dest_path.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_default();
+                            let mut count = 2;
+                            loop {
+                                let candidate = self.current_dir.join(format!("{} (copy {}){}", stem, count, ext));
+                                if !candidate.exists() {
+                                    dest_path = candidate;
+                                    break;
+                                }
+                                count += 1;
+                            }
+                        }
+                    }
+                    if is_cut {
+                        let _ = std::fs::rename(&src_path, &dest_path);
+                    } else {
+                        // Use cp -r to support directories on Linux
+                        let _ = std::process::Command::new("cp")
+                            .arg("-r")
+                            .arg(&src_path)
+                            .arg(&dest_path)
+                            .status();
+                    }
+                }
+            }
+            if is_cut {
+                self.clipboard = None;
+            }
+            self.scan_current_dir();
         }
     }
 }
