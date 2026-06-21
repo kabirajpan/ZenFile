@@ -1,0 +1,29 @@
+/target
+.env
+*.log
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+*.iml
+
+# Swap and backup files
+*~
+*.swp
+*.swo
+*.bak
+
+# OS
+Thumbs.db
+
+# Rust / Cargo build artifacts
+*.rlib
+*.rmeta
+*.dSYM
+
+# Dynamic libraries and executables
+*.so
+*.dylib
+*.dll
+*.exe
