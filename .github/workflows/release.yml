@@ -1,0 +1,112 @@
+name: Build and Release ZenFile
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release - ${{ matrix.platform.os-name }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-latest
+            os-name: linux
+            target: x86_64-unknown-linux-gnu
+            bin: file-manager
+            archive_name: zenfile-linux-x86_64.tar.gz
+          - os: windows-latest
+            os-name: windows
+            target: x86_64-pc-windows-msvc
+            bin: file-manager.exe
+            archive_name: zenfile-windows-x86_64.zip
+          - os: macos-latest
+            os-name: macos-universal
+            target: aarch64-apple-darwin
+            bin: file-manager
+            archive_name: zenfile-macos-universal.tar.gz
+
+    steps:
+      # Checkout the main zenthra-v2 repository to resolve local relative path dependencies
+      - name: Checkout Core Framework
+        uses: actions/checkout@v4
+        with:
+          repository: kabirajpan/zenthra-v2
+          path: zenthra
+
+      # Checkout the current ZenFile repository nested in the expected relative structure
+      - name: Checkout ZenFile
+        uses: actions/checkout@v4
+        with:
+          path: zenthra/apps/file_manager
+
+      - name: Install System Dependencies (Linux)
+        if: matrix.platform.os-name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libx11-dev libx11-xcb-dev libxkbcommon-dev libwayland-dev libegl1-mesa-dev libgbm-dev
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Add Intel macOS target
+        if: matrix.platform.os-name == 'macos-universal'
+        run: rustup target add x86_64-apple-darwin
+
+      - name: Build Standalone Binary (Non-macOS)
+        if: matrix.platform.os-name != 'macos-universal'
+        working-directory: zenthra/apps/file_manager
+        run: |
+          cargo build --release --bin file-manager --target ${{ matrix.platform.target }}
+
+      - name: Build Standalone Binaries (macOS Universal)
+        if: matrix.platform.os-name == 'macos-universal'
+        working-directory: zenthra/apps/file_manager
+        run: |
+          cargo build --release --bin file-manager --target aarch64-apple-darwin
+          cargo build --release --bin file-manager --target x86_64-apple-darwin
+
+      - name: Create Universal macOS Binary
+        if: matrix.platform.os-name == 'macos-universal'
+        working-directory: zenthra/apps/file_manager
+        run: |
+          lipo -create \
+            -output target/file-manager \
+            target/aarch64-apple-darwin/release/file-manager \
+            target/x86_64-apple-darwin/release/file-manager
+          file target/file-manager
+
+      - name: Package Binary (Windows)
+        if: matrix.platform.os-name == 'windows'
+        run: |
+          cd zenthra/apps/file_manager/target/${{ matrix.platform.target }}/release
+          powershell Compress-Archive -Path ${{ matrix.platform.bin }} -DestinationPath "${{ github.workspace }}\${{ matrix.platform.archive_name }}"
+
+      - name: Package Binary (Linux)
+        if: matrix.platform.os-name == 'linux'
+        run: |
+          cd zenthra/apps/file_manager/target/${{ matrix.platform.target }}/release
+          tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" ${{ matrix.platform.bin }}
+
+      - name: Package Binary (macOS Universal)
+        if: matrix.platform.os-name == 'macos-universal'
+        run: |
+          cd zenthra/apps/file_manager/target
+          tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" file-manager
+
+      - name: Upload Binaries to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.platform.archive_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -45,10 +45,6 @@ pub fn tag_name_to_color(name: &str) -> Color {
     }
 }
 
-pub const TAG_COLORS: [(&str, &str); 7] = [
-    ("red", "red"), ("orange", "orange"), ("yellow", "yellow"),
-    ("green", "green"), ("blue", "blue"), ("purple", "purple"), ("none", "none"),
-];
 
 // Nerd Font Icon constants
 pub const NF_FA_FOLDER: &str = "\u{f07b}";

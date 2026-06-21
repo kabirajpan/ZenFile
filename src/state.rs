@@ -34,7 +34,6 @@ pub struct FileItem {
     pub category: String,  // e.g. "image", "text", "archive", "document", "executable", "other", "folder"
     pub display_type: String, // e.g. "Folder", "Image File", "Text Document"
     pub extension: String, // lowercase extension, e.g. "rs"
-    pub preview_children: Vec<(String, String)>, // (category, extension) of first 3 items inside
 }
 
 pub struct FileManagerState {
@@ -225,24 +224,6 @@ impl FileManagerState {
                     }
                 }
 
-                let mut preview_children = Vec::new();
-                if is_dir {
-                    if let Ok(sub_entries) = std::fs::read_dir(&path) {
-                        for sub_entry in sub_entries.flatten() {
-                            let sub_path = sub_entry.path();
-                            let (_sub_display, sub_category) = get_file_info(&sub_path);
-                            let sub_ext = sub_path.extension()
-                                .and_then(|e| e.to_str())
-                                .unwrap_or("")
-                                .to_lowercase();
-                            preview_children.push((sub_category, sub_ext));
-                            if preview_children.len() >= 3 {
-                                break;
-                            }
-                        }
-                    }
-                }
-
                 let item = FileItem {
                     name,
                     path,
@@ -252,7 +233,6 @@ impl FileManagerState {
                     category,
                     display_type,
                     extension,
-                    preview_children,
                 };
 
                 if is_dir {
@@ -450,67 +430,118 @@ impl FileManagerState {
         }
     }
 
-    /// Spawn terminal in selected or current folder.
+    /// Spawn terminal in selected or current folder (cross-platform).
     pub fn open_terminal_in(&self, dir: &std::path::Path) {
         let path_str = dir.to_string_lossy().to_string();
         std::thread::spawn(move || {
-            let terminals = [
-                ("kitty", vec!["--directory".to_string(), path_str.clone()]),
-                ("alacritty", vec!["--working-directory".to_string(), path_str.clone()]),
-                ("gnome-terminal", vec!["--working-directory".to_string(), path_str.clone()]),
-                ("konsole", vec!["--workdir".to_string(), path_str.clone()]),
-                ("xterm", vec!["-e".to_string(), "bash".to_string(), "-c".to_string(), format!("cd '{}' && exec bash", path_str)]),
-            ];
-
-            for (term, args) in terminals {
-                if std::process::Command::new(term)
-                    .args(&args)
+            #[cfg(target_os = "windows")]
+            {
+                // Try Windows Terminal first, fall back to cmd.exe
+                if std::process::Command::new("wt")
+                    .args(&["-d", &path_str])
                     .spawn()
-                    .is_ok()
+                    .is_err()
                 {
-                    return;
+                    let _ = std::process::Command::new("cmd")
+                        .args(&["/C", "start", "cmd.exe"])
+                        .current_dir(&path_str)
+                        .spawn();
+                }
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let script = format!("tell app \"Terminal\" to do script \"cd '{}'\" activate", path_str);
+                let _ = std::process::Command::new("osascript")
+                    .args(&["-e", &script])
+                    .spawn();
+            }
+            #[cfg(target_os = "linux")]
+            {
+                let terminals = [
+                    ("kitty", vec!["--directory".to_string(), path_str.clone()]),
+                    ("alacritty", vec!["--working-directory".to_string(), path_str.clone()]),
+                    ("gnome-terminal", vec!["--working-directory".to_string(), path_str.clone()]),
+                    ("konsole", vec!["--workdir".to_string(), path_str.clone()]),
+                    ("xterm", vec!["-e".to_string(), "bash".to_string(), "-c".to_string(), format!("cd '{}' && exec bash", path_str)]),
+                ];
+                for (term, args) in terminals {
+                    if std::process::Command::new(term)
+                        .args(&args)
+                        .spawn()
+                        .is_ok()
+                    {
+                        return;
+                    }
                 }
             }
         });
     }
 
-    /// Copies a given path string to the system clipboard (Wayland/X11).
+    /// Copies a given path string to the system clipboard (cross-platform).
     pub fn copy_path_to_clipboard(&self, path_str: &str) {
         let text = path_str.to_string();
         std::thread::spawn(move || {
-            // 1. Try wl-copy (Wayland)
-            if std::process::Command::new("wl-copy")
-                .arg(&text)
-                .status()
-                .is_ok()
-            {
-                return;
-            }
-            // 2. Try xclip (X11)
-            if let Ok(mut child) = std::process::Command::new("xclip")
-                .arg("-selection")
-                .arg("clipboard")
-                .stdin(std::process::Stdio::piped())
-                .spawn()
+            #[cfg(target_os = "windows")]
             {
                 use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    let _ = stdin.write_all(text.as_bytes());
+                if let Ok(mut child) = std::process::Command::new("clip")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
                 }
-                let _ = child.wait();
-                return;
             }
-            // 3. Try xsel (X11 fallback)
-            if let Ok(mut child) = std::process::Command::new("xsel")
-                .arg("-ib")
-                .stdin(std::process::Stdio::piped())
-                .spawn()
+            #[cfg(target_os = "macos")]
             {
                 use std::io::Write;
-                if let Some(mut stdin) = child.stdin.take() {
-                    let _ = stdin.write_all(text.as_bytes());
+                if let Ok(mut child) = std::process::Command::new("pbcopy")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
                 }
-                let _ = child.wait();
+            }
+            #[cfg(target_os = "linux")]
+            {
+                use std::io::Write;
+                // 1. Try wl-copy (Wayland)
+                if std::process::Command::new("wl-copy")
+                    .arg(&text)
+                    .status()
+                    .is_ok()
+                {
+                    return;
+                }
+                // 2. Try xclip (X11)
+                if let Ok(mut child) = std::process::Command::new("xclip")
+                    .arg("-selection")
+                    .arg("clipboard")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                    return;
+                }
+                // 3. Try xsel (X11 fallback)
+                if let Ok(mut child) = std::process::Command::new("xsel")
+                    .arg("-ib")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                }
             }
         });
     }
@@ -533,7 +564,6 @@ impl FileManagerState {
     pub fn copy_selected(&mut self) {
         if !self.selected_paths.is_empty() {
             let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
-            println!("DEBUG COPY_SELECTED: paths={:?}", paths);
             self.clipboard = Some((paths, false));
         }
     }
@@ -542,7 +572,6 @@ impl FileManagerState {
     pub fn cut_selected(&mut self) {
         if !self.selected_paths.is_empty() {
             let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
-            println!("DEBUG CUT_SELECTED: paths={:?}", paths);
             self.clipboard = Some((paths, true));
         }
     }
@@ -550,7 +579,6 @@ impl FileManagerState {
     /// Pastes files currently in state.clipboard to self.current_dir
     pub fn paste_clipboard(&mut self) {
         if let Some((src_paths, is_cut)) = self.clipboard.clone() {
-            println!("DEBUG PASTE_CLIPBOARD: src_paths={:?} is_cut={}", src_paths, is_cut);
             for src_path in src_paths {
                 if !src_path.exists() {
                     continue;
@@ -579,12 +607,8 @@ impl FileManagerState {
                     if is_cut {
                         let _ = std::fs::rename(&src_path, &dest_path);
                     } else {
-                        // Use cp -r to support directories on Linux
-                        let _ = std::process::Command::new("cp")
-                            .arg("-r")
-                            .arg(&src_path)
-                            .arg(&dest_path)
-                            .status();
+                        // Cross-platform recursive copy using std::fs
+                        copy_recursive(&src_path, &dest_path);
                     }
                 }
             }
@@ -593,6 +617,22 @@ impl FileManagerState {
             }
             self.scan_current_dir();
         }
+    }
+}
+
+/// Cross-platform recursive copy of src to dest using only std::fs.
+fn copy_recursive(src: &std::path::Path, dest: &std::path::Path) {
+    if src.is_dir() {
+        let _ = std::fs::create_dir_all(dest);
+        if let Ok(entries) = std::fs::read_dir(src) {
+            for entry in entries.flatten() {
+                let child_src = entry.path();
+                let child_dest = dest.join(entry.file_name());
+                copy_recursive(&child_src, &child_dest);
+            }
+        }
+    } else {
+        let _ = std::fs::copy(src, dest);
     }
 }
 

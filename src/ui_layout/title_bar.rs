@@ -308,7 +308,12 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let min_resp = ui.container()
                         .width(BTN_W).height(BTN_W)
                         .radius_all(BTN_W / 2.0)
-                        .bg(if min_hov { Color::rgba(1.0, 1.0, 1.0, 0.08) } else { Color::TRANSPARENT })
+                        .bg(if min_hov {
+                            match state.theme {
+                                ThemeMode::Dark => Color::rgba(1.0, 1.0, 1.0, 0.08),
+                                ThemeMode::Light => Color::rgba(0.0, 0.0, 0.0, 0.06),
+                            }
+                        } else { Color::TRANSPARENT })
                         .halign(Align::Center)
                         .valign(Align::Center)
                         .show(|ui| {
@@ -327,7 +332,12 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let max_resp = ui.container()
                         .width(BTN_W).height(BTN_W)
                         .radius_all(BTN_W / 2.0)
-                        .bg(if max_hov { Color::rgba(1.0, 1.0, 1.0, 0.08) } else { Color::TRANSPARENT })
+                        .bg(if max_hov {
+                            match state.theme {
+                                ThemeMode::Dark => Color::rgba(1.0, 1.0, 1.0, 0.08),
+                                ThemeMode::Light => Color::rgba(0.0, 0.0, 0.0, 0.06),
+                            }
+                        } else { Color::TRANSPARENT })
                         .halign(Align::Center)
                         .valign(Align::Center)
                         .show(|ui| {

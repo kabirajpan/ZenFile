@@ -165,9 +165,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                             state.history_idx = state.history.len() - 1;
                             state.scan_current_dir();
                         } else {
-                            let _ = std::process::Command::new("xdg-open")
-                                .arg(&path)
-                                .spawn();
+                            super::common::open_file(&path);
                         }
                     }
                     state.context_menu_pos = None;

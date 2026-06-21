@@ -27,3 +27,12 @@ Thumbs.db
 *.dylib
 *.dll
 *.exe
+
+# Unused heavy assets and extra logs
+assets/Slot-Spectrum-Light-Icons/
+assets/gruvbox-plus-icon-pack.6.4.0/
+assets/file-manager-icons/
+assets/final-icons/
+assets/icons/
+*.log
+
