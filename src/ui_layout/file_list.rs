@@ -354,6 +354,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                     let dy = ui.mouse_y - start_pos.1;
                                     if dx.abs() > 12.0 || dy.abs() > 12.0 {
                                         state.dragging_item = Some(path.clone());
+                                        if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
+                                            let item_x = rect.origin.x + ui.offset_x;
+                                            let item_y = rect.origin.y + ui.offset_y;
+                                            state.drag_item_offset = Some((start_pos.0 - item_x, start_pos.1 - item_y));
+                                        }
                                         ui.request_redraw();
                                     }
                                 }
@@ -367,6 +372,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 state.dragging_item = None;
                                 state.drag_pressed_item = None;
                                 state.drag_start_pos = None;
+                                state.drag_item_offset = None;
                                 ui.request_redraw();
                             }
                         }
@@ -502,6 +508,11 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                     let dy = ui.mouse_y - start_pos.1;
                                     if dx.abs() > 12.0 || dy.abs() > 12.0 {
                                         state.dragging_item = Some(path.clone());
+                                        if let Some((rect, _)) = ui.get_recorded_layout(item_id) {
+                                            let item_x = rect.origin.x + ui.offset_x;
+                                            let item_y = rect.origin.y + ui.offset_y;
+                                            state.drag_item_offset = Some((start_pos.0 - item_x, start_pos.1 - item_y));
+                                        }
                                         ui.request_redraw();
                                     }
                                 }
@@ -515,6 +526,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                                 state.dragging_item = None;
                                 state.drag_pressed_item = None;
                                 state.drag_start_pos = None;
+                                state.drag_item_offset = None;
                                 ui.request_redraw();
                             }
                         }
@@ -648,6 +660,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
         state.dragging_item = None;
         state.drag_pressed_item = None;
         state.drag_start_pos = None;
+        state.drag_item_offset = None;
         ui.request_redraw();
     }
 
@@ -667,25 +680,54 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
             let mouse_x = ui.mouse_x;
             let mouse_y = ui.mouse_y;
 
-            if state.view_mode == ViewMode::List {
+            let (ox, oy) = state.drag_item_offset.unwrap_or_else(|| {
+                if state.view_mode == ViewMode::List {
+                    (90.0, 14.0)
+                } else {
+                    let (tile_w, tile_h, _, _, _) = match state.view_mode {
+                        ViewMode::Medium     => (76.0_f32,  68.0_f32,  40.0_f32, 10, 9.5_f32),
+                        ViewMode::Large      => (112.0_f32, 96.0_f32,  64.0_f32, 14, 10.5_f32),
+                        ViewMode::ExtraLarge => (152.0_f32, 132.0_f32, 96.0_f32, 18, 11.0_f32),
+                        _ => (76.0_f32, 68.0_f32, 40.0_f32, 10, 9.5_f32),
+                    };
+                    (tile_w / 2.0, tile_h / 2.0)
+                }
+            });
+
+             if state.view_mode == ViewMode::List {
+                let img_src = ImageSource::Path(icon_path.clone());
+                let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
+                    let orig_w = *orig_w as f32;
+                    let orig_h = *orig_h as f32;
+                    let ratio = orig_w / orig_h;
+                    if ratio > 1.0 {
+                        (16.0, 16.0 / ratio)
+                    } else {
+                        (16.0 * ratio, 16.0)
+                    }
+                } else {
+                    (16.0, 16.0)
+                };
+
                 ui.container()
                     .overlay()
-                    .absolute(mouse_x - 90.0, mouse_y - 14.0)
+                    .absolute(mouse_x - ox, mouse_y - oy)
                     .width(180.0)
                     .height(28.0)
-                    .bg(Color::TRANSPARENT)
                     .padding(4.0, 12.0, 4.0, 12.0)
                     .row()
                     .gap(8.0)
                     .valign(Align::Center)
                     .show(|ui| {
-                        ui.image(ImageSource::Path(icon_path))
-                            .size(16.0, 16.0)
+                        ui.image(img_src)
+                            .size(w, h)
                             .fit(ObjectFit::Contain)
+                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 3.0, 6.0)
                             .show();
                         ui.text(&filename)
                             .size(11.5)
                             .color(colors.text_primary)
+                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
                             .show();
                     });
             } else {
@@ -696,25 +738,40 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     _ => (76.0_f32, 68.0_f32, 40.0_f32, 10, 9.5_f32), // Fallback
                 };
                 let display_name = truncate_filename(&filename, name_max);
+                let img_src = ImageSource::Path(icon_path.clone());
+                let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
+                    let orig_w = *orig_w as f32;
+                    let orig_h = *orig_h as f32;
+                    let ratio = orig_w / orig_h;
+                    if ratio > 1.0 {
+                        (icon_size, icon_size / ratio)
+                    } else {
+                        (icon_size * ratio, icon_size)
+                    }
+                } else {
+                    (icon_size, icon_size)
+                };
+
                 ui.container()
                     .overlay()
-                    .absolute(mouse_x - tile_w / 2.0, mouse_y - tile_h / 2.0)
+                    .absolute(mouse_x - ox, mouse_y - oy)
                     .width(tile_w)
                     .height(tile_h)
-                    .bg(Color::TRANSPARENT)
                     .padding(2.0, 2.0, 2.0, 2.0)
                     .column()
                     .align(Align::Center)
                     .valign(Align::Center)
                     .gap(2.0)
                     .show(|ui| {
-                        ui.image(ImageSource::Path(icon_path))
-                            .size(icon_size, icon_size)
+                        ui.image(img_src)
+                            .size(w, h)
                             .fit(ObjectFit::Contain)
+                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 4.0, 8.0)
                             .show();
                         ui.text(&display_name)
                             .size(font_size)
                             .color(colors.text_primary)
+                            .shadow(Color::rgba(0.0, 0.0, 0.0, 0.65), 0.0, 1.0, 2.0)
                             .show();
                     });
             }
