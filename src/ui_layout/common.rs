@@ -73,11 +73,8 @@ pub fn get_item_icon_path(theme_name: &str, category: &str, extension: &str) -> 
 }
 
 pub fn get_folder_icon_path(theme_name: &str, _folder_name: &str, folder_color: &str, flat_folders: bool) -> PathBuf {
-    let prefix = if Path::new("apps/file_manager").exists() {
-        "apps/file_manager/"
-    } else {
-        ""
-    };
+    let prefix = "";
+    
     let folders_base = PathBuf::from(format!("{}assets/themes/{}/folders", prefix, theme_name));
     let color = folder_color.to_lowercase();
     if flat_folders {

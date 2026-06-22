@@ -133,11 +133,8 @@ impl IconTheme {
     }
 
     pub fn get_icon_path(&self, category: &str, extension: &str) -> std::path::PathBuf {
-        let prefix = if std::path::Path::new("apps/file_manager").exists() {
-            "apps/file_manager/"
-        } else {
-            ""
-        };
+        let prefix = "";
+        
         let base = std::path::PathBuf::from(format!("{}assets/themes/{}/Gruvbox-Plus-Dark/mimetypes/scalable", prefix, self.name));
         let folders_base = std::path::PathBuf::from(format!("{}assets/themes/{}/folders", prefix, self.name));
         

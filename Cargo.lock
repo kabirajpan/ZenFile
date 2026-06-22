@@ -4288,6 +4288,8 @@ checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
 [[package]]
 name = "zenthra"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5ec1804dee788791096cf0846055c72c4bfba44f10d10aaa1986277c510a4ac"
 dependencies = [
  "bytemuck",
  "log",
@@ -4308,6 +4310,8 @@ dependencies = [
 [[package]]
 name = "zenthra-animation"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d105706c2e5dc402cc71d1f600cb687dc38d2cccbbd208464253f791ca1aca6c"
 dependencies = [
  "glam",
  "zenthra-core",
@@ -4317,6 +4321,8 @@ dependencies = [
 [[package]]
 name = "zenthra-core"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcb08b6ae8d279fa68e52ea9114b773db958625f1ec2620ae185518c0152509c"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4328,6 +4334,8 @@ dependencies = [
 [[package]]
 name = "zenthra-input"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3988ed782093a092e6446da4c4bc15fb5ba7cb018cab7a6fe0e7a116bca9f293"
 dependencies = [
  "glam",
  "winit",
@@ -4337,6 +4345,8 @@ dependencies = [
 [[package]]
 name = "zenthra-layout"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b87d074da4c40170c146ba32c2e43b6363cf19eff7817933a55b5e5b16954ce"
 dependencies = [
  "glam",
  "taffy",
@@ -4346,6 +4356,8 @@ dependencies = [
 [[package]]
 name = "zenthra-platform"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd35b3a02b984eb4e17ec137108993df8230ed5351e483f26720697a41daa2f"
 dependencies = [
  "android-activity",
  "glam",
@@ -4361,6 +4373,8 @@ dependencies = [
 [[package]]
 name = "zenthra-render"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "395303cd06d27d1c686056c7e0e6d515d5ca470b0c6b8acf502f723b795cc362"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4375,6 +4389,8 @@ dependencies = [
 [[package]]
 name = "zenthra-state"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9418452a87c0005c4f19f70d794e32c07271420f66e3d8484e9b14786e753e3f"
 dependencies = [
  "log",
  "zenthra-core",
@@ -4383,6 +4399,8 @@ dependencies = [
 [[package]]
 name = "zenthra-text"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e4c86f87c12b1fb8c9f92bf924d64b0f57a2a109c95c162e5c9e638f592d5b4"
 dependencies = [
  "bytemuck",
  "cosmic-text",
@@ -4399,6 +4417,8 @@ dependencies = [
 [[package]]
 name = "zenthra-theme"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25765d50c8c91aba0c7db6a4426eb2460e3c2791b13fd938540c2eff612e7467"
 dependencies = [
  "glam",
  "zenthra-core",
@@ -4407,6 +4427,8 @@ dependencies = [
 [[package]]
 name = "zenthra-widgets"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eec4b69742595adf36344286f5a48ff402a0adb61a5fe4e6c895416e16a518f"
 dependencies = [
  "glam",
  "log",
