@@ -33,14 +33,12 @@ jobs:
             archive_name: zenfile-macos-universal.tar.gz
 
     steps:
-      # Checkout the main zenthra-v2 repository to resolve local relative path dependencies
       - name: Checkout Core Framework
         uses: actions/checkout@v4
         with:
           repository: kabirajpan/zenthra-v2
           path: zenthra
 
-      # Checkout the current ZenFile repository nested in the expected relative structure
       - name: Checkout ZenFile
         uses: actions/checkout@v4
         with:
@@ -92,19 +90,19 @@ jobs:
 
       - name: Package Binary (Linux)
         if: matrix.platform.os-name == 'linux'
+        working-directory: zenthra/apps/file_manager
         run: |
-          cd zenthra/apps/file_manager
           tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" \
             -C target/${{ matrix.platform.target }}/release file-manager \
-            -C ../.. assets/
+            -C . assets/
 
       - name: Package Binary (macOS Universal)
         if: matrix.platform.os-name == 'macos-universal'
+        working-directory: zenthra/apps/file_manager
         run: |
-          cd zenthra/apps/file_manager
           tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" \
             -C target file-manager \
-            -C .. assets/
+            -C . assets/
 
       - name: Upload Binaries to Release
         uses: softprops/action-gh-release@v2
