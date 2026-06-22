@@ -4287,7 +4287,7 @@ checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
 
 [[package]]
 name = "zenthra"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytemuck",
  "log",
@@ -4307,7 +4307,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-animation"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "zenthra-core",
@@ -4316,7 +4316,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4327,7 +4327,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-input"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "winit",
@@ -4336,7 +4336,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-layout"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "taffy",
@@ -4345,7 +4345,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-platform"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "android-activity",
  "glam",
@@ -4360,7 +4360,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-render"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytemuck",
  "glam",
@@ -4374,7 +4374,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-state"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "log",
  "zenthra-core",
@@ -4382,7 +4382,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-text"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bytemuck",
  "cosmic-text",
@@ -4398,7 +4398,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-theme"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "zenthra-core",
@@ -4406,7 +4406,7 @@ dependencies = [
 
 [[package]]
 name = "zenthra-widgets"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glam",
  "log",
