@@ -1,3 +1,4 @@
+
 name: Build and Release ZenFile
 
 on:
@@ -84,25 +85,25 @@ jobs:
 
       - name: Package Binary (Windows)
         if: matrix.platform.os-name == 'windows'
-        working-directory: zenthra/apps/file_manager
         run: |
-          powershell Compress-Archive -Path "target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}", "assets/" -DestinationPath "${{ github.workspace }}\${{ matrix.platform.archive_name }}"
+          cd zenthra/apps/file_manager
+          powershell Compress-Archive -Path "target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}", "assets" -DestinationPath "${{ github.workspace }}\${{ matrix.platform.archive_name }}"
 
       - name: Package Binary (Linux)
         if: matrix.platform.os-name == 'linux'
-        working-directory: zenthra/apps/file_manager
         run: |
+          cd zenthra/apps/file_manager
           tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" \
-            -C target/${{ matrix.platform.target }}/release file-manager \
-            -C . assets/
+            -C "target/${{ matrix.platform.target }}/release" file-manager \
+            -C . assets
 
       - name: Package Binary (macOS Universal)
         if: matrix.platform.os-name == 'macos-universal'
-        working-directory: zenthra/apps/file_manager
         run: |
+          cd zenthra/apps/file_manager
           tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" \
             -C target file-manager \
-            -C . assets/
+            -C . assets
 
       - name: Upload Binaries to Release
         uses: softprops/action-gh-release@v2
