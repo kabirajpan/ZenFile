@@ -1,11 +1,11 @@
 use crate::state::{FileManagerState, format_size, ViewMode};
 use std::hash::{Hash, Hasher};
 use super::common::{
-    get_item_icon_path, get_folder_icon_path, tag_name_to_color,
+    get_item_icon_source, get_folder_icon_source, tag_name_to_color,
     truncate_filename, truncate_str, format_date, open_file,
     is_drag_drop_hovered, drop_target_bg,
 };
-use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align, Id, PlatformEvent};
+use zenthra::{Color, ObjectFit, Ui, FontWeight, Align, Id, PlatformEvent};
 
 pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let colors = state.colors();
@@ -247,12 +247,10 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         let item = &filtered_items[idx];
                         let is_selected = state.selected_paths.contains(&item.path);
 
-                        let icon_path = get_item_icon_path(&state.icon_theme, &item.category, &item.extension);
-
-                        let final_icon_path = if item.is_dir {
-                            get_folder_icon_path(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
+                        let final_icon_source = if item.is_dir {
+                            get_folder_icon_source(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
                         } else {
-                            icon_path.clone()
+                            get_item_icon_source(&state.icon_theme, &item.category, &item.extension)
                         };
 
                         let is_menu_open = state.context_menu_pos.is_some();
@@ -293,7 +291,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .clip(true)
                             .show(|ui| {
                                 ui.container().width(col_name_w).row().gap(8.0).valign(Align::Center).show(|ui| {
-                                    ui.image(ImageSource::Path(final_icon_path))
+                                    ui.image(final_icon_source)
                                         .size(16.0, 16.0)
                                         .fit(ObjectFit::Contain)
                                         .show();
@@ -451,7 +449,6 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     .show(|ui, idx| {
                         let item = &filtered_items[idx];
                         let is_selected = state.selected_paths.contains(&item.path);
-                        let icon_path = get_item_icon_path(&state.icon_theme, &item.category, &item.extension);
 
                         let is_menu_open = state.context_menu_pos.is_some();
                         let show_hover = !is_menu_open;
@@ -493,13 +490,13 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .padding(2.0, 2.0, 2.0, 2.0)
                             .clip(true)
                             .show(|ui| {
-                                let final_icon_path = if item.is_dir {
-                                    get_folder_icon_path(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
+                                let final_icon_source = if item.is_dir {
+                                    get_folder_icon_source(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
                                 } else {
-                                    icon_path.clone()
+                                    get_item_icon_source(&state.icon_theme, &item.category, &item.extension)
                                 };
 
-                                ui.image(ImageSource::Path(final_icon_path))
+                                ui.image(final_icon_source)
                                     .size(icon_size, icon_size)
                                     .fit(ObjectFit::Contain)
                                     .show();
@@ -823,15 +820,13 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                     let filename = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                     let is_dir = path.is_dir();
-                    let icon_path = if is_dir {
-                        get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+                    let img_src = if is_dir {
+                        get_folder_icon_source(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
                     } else {
                         let extension = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
                         let (_, category) = crate::state::get_file_info(path);
-                        get_item_icon_path(&state.icon_theme, &category, &extension)
+                        get_item_icon_source(&state.icon_theme, &category, &extension)
                     };
-
-                    let img_src = ImageSource::Path(icon_path.clone());
                     let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
                         let orig_w = *orig_w as f32;
                         let orig_h = *orig_h as f32;
@@ -910,15 +905,13 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                     let filename = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                     let is_dir = path.is_dir();
-                    let icon_path = if is_dir {
-                        get_folder_icon_path(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
+                    let img_src = if is_dir {
+                        get_folder_icon_source(&state.icon_theme, &filename, &state.folder_color, state.flat_folders)
                     } else {
                         let extension = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
                         let (_, category) = crate::state::get_file_info(path);
-                        get_item_icon_path(&state.icon_theme, &category, &extension)
+                        get_item_icon_source(&state.icon_theme, &category, &extension)
                     };
-
-                    let img_src = ImageSource::Path(icon_path.clone());
                     let (w, h) = if let Some((orig_w, orig_h)) = ui.image_sizes.get(&img_src) {
                         let orig_w = *orig_w as f32;
                         let orig_h = *orig_h as f32;

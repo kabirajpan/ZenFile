@@ -1,6 +1,7 @@
 mod state;
 mod theme;
 mod ui_layout;
+mod assets;
 
 use state::FileManagerState;
 use theme::ThemeMode;
@@ -13,11 +14,16 @@ fn main() {
     // Initialize the modular state
     let mut state = FileManagerState::new();
 
+    let font_bytes = assets::Assets::get("fonts/SymbolsNerdFont-Regular.ttf")
+        .expect("Failed to find Nerd Font in embedded assets")
+        .data
+        .into_owned();
+
     App::new()
         .title("ZenFile")
         .size(1100, 680)
         .decorations(false)
-        .load_font_path("assets/fonts/SymbolsNerdFont-Regular.ttf")
+        .load_font_data(font_bytes)
         .with_ui(move |ui| {
             // Expose the active theme flag to interaction_state so widgets can read it
             let theme_val = if state.theme == ThemeMode::Light { 1.0 } else { 0.0 };

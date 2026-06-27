@@ -1,4 +1,4 @@
-use zenthra::Color;
+use zenthra::{Color, ImageSource};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThemeMode {
@@ -132,14 +132,16 @@ impl IconTheme {
         }
     }
 
-    pub fn get_icon_path(&self, category: &str, extension: &str) -> std::path::PathBuf {
-        let prefix = "";
-        
-        let base = std::path::PathBuf::from(format!("{}assets/themes/{}/Gruvbox-Plus-Dark/mimetypes/scalable", prefix, self.name));
-        let folders_base = std::path::PathBuf::from(format!("{}assets/themes/{}/folders", prefix, self.name));
+    pub fn get_icon_source(&self, category: &str, extension: &str) -> ImageSource {
+        let relative_base = format!("themes/{}/Gruvbox-Plus-Dark/mimetypes/scalable", self.name);
+        let relative_folders_base = format!("themes/{}/folders", self.name);
         
         if category == "folder" {
-            return folders_base.join("gray.png");
+            let path = format!("{}/gray.png", relative_folders_base);
+            if let Some(file) = crate::assets::Assets::get(&path) {
+                return ImageSource::Bytes(std::sync::Arc::from(file.data.into_owned()));
+            }
+            return ImageSource::Bytes(std::sync::Arc::from(&[][..]));
         }
         
         let filename = match extension {
@@ -202,6 +204,11 @@ impl IconTheme {
             }
         };
         
-        base.join(filename)
+        let path = format!("{}/{}", relative_base, filename);
+        if let Some(file) = crate::assets::Assets::get(&path) {
+            ImageSource::Bytes(std::sync::Arc::from(file.data.into_owned()))
+        } else {
+            ImageSource::Bytes(std::sync::Arc::from(&[][..]))
+        }
     }
 }

@@ -1,4 +1,4 @@
-use zenthra::{Color, Id, Ui};
+use zenthra::{Color, Id, Ui, ImageSource};
 use std::path::{Path, PathBuf};
 use std::hash::{Hash, Hasher};
 
@@ -66,18 +66,15 @@ pub const NF_FA_TRASH: &str = "\u{f1f8}";
 pub const NF_FA_EDIT: &str = "\u{f040}";
 pub const NF_FA_EXTERNAL_LINK: &str = "\u{f08e}";
 
-/// Helper to get image icon path for a file category and extension using the active theme
-pub fn get_item_icon_path(theme_name: &str, category: &str, extension: &str) -> PathBuf {
+/// Helper to get image icon source for a file category and extension using the active theme
+pub fn get_item_icon_source(theme_name: &str, category: &str, extension: &str) -> ImageSource {
     let theme = crate::theme::IconTheme::new(theme_name);
-    theme.get_icon_path(category, extension)
+    theme.get_icon_source(category, extension)
 }
 
-pub fn get_folder_icon_path(theme_name: &str, _folder_name: &str, folder_color: &str, flat_folders: bool) -> PathBuf {
-    let prefix = "";
-    
-    let folders_base = PathBuf::from(format!("{}assets/themes/{}/folders", prefix, theme_name));
+pub fn get_folder_icon_source(theme_name: &str, _folder_name: &str, folder_color: &str, flat_folders: bool) -> ImageSource {
     let color = folder_color.to_lowercase();
-    if flat_folders {
+    let relative_path = if flat_folders {
         let folder_dir = if color == "gray" {
             "gray-folder-layers".to_string()
         } else if color == "turquoise" {
@@ -85,14 +82,20 @@ pub fn get_folder_icon_path(theme_name: &str, _folder_name: &str, folder_color: 
         } else {
             format!("{}-folder-layer", color)
         };
-        folders_base.join(folder_dir).join("Folder.png")
+        format!("themes/{}/folders/{}/Folder.png", theme_name, folder_dir)
     } else {
         let file_name = if color == "turquoise" {
             "turquoise.png".to_string()
         } else {
             format!("{}.png", color)
         };
-        folders_base.join(file_name)
+        format!("themes/{}/folders/{}", theme_name, file_name)
+    };
+
+    if let Some(file) = crate::assets::Assets::get(&relative_path) {
+        ImageSource::Bytes(std::sync::Arc::from(file.data.into_owned()))
+    } else {
+        ImageSource::Bytes(std::sync::Arc::from(&[][..]))
     }
 }
 

@@ -11,6 +11,7 @@ rfd = "0.15"
 dirs = "5"
 jiff = "0.2"
 winit = "0.30"
+rust-embed = "8.5.0"
 
 
 [workspace]

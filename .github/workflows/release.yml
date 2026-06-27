@@ -56,9 +56,11 @@ jobs:
         with:
           targets: ${{ matrix.platform.target }}
 
-      - name: Add Intel macOS target
+      - name: Add macOS compilation targets
         if: matrix.platform.os-name == 'macos-universal'
-        run: rustup target add x86_64-apple-darwin
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
 
       - name: Build Standalone Binary (Non-macOS)
         if: matrix.platform.os-name != 'macos-universal'
@@ -86,17 +88,17 @@ jobs:
       - name: Package Binary (Windows)
         if: matrix.platform.os-name == 'windows'
         run: |
-          cd zenthra/apps/file_manager && powershell Compress-Archive -Path "target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}", "assets" -DestinationPath "${{ github.workspace }}\${{ matrix.platform.archive_name }}"
+          cd zenthra/apps/file_manager && powershell Compress-Archive -Path "target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}" -DestinationPath "${{ github.workspace }}\${{ matrix.platform.archive_name }}"
 
       - name: Package Binary (Linux)
         if: matrix.platform.os-name == 'linux'
         run: |
-          cd zenthra/apps/file_manager && tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" -C "target/${{ matrix.platform.target }}/release" file-manager -C . assets
+          cd zenthra/apps/file_manager && tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" -C "target/${{ matrix.platform.target }}/release" file-manager
 
       - name: Package Binary (macOS Universal)
         if: matrix.platform.os-name == 'macos-universal'
         run: |
-          cd zenthra/apps/file_manager && tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" -C target file-manager -C . assets
+          cd zenthra/apps/file_manager && tar -czf "${{ github.workspace }}/${{ matrix.platform.archive_name }}" -C target file-manager
 
       - name: Upload Binaries to Release
         uses: softprops/action-gh-release@v2

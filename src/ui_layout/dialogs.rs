@@ -1,9 +1,9 @@
 use crate::state::{FileManagerState, format_size};
 use crate::theme::ThemeColors;
 use super::common::{
-    get_folder_icon_path, get_item_icon_path, format_date, tag_name_to_color,
+    get_folder_icon_source, get_item_icon_source, format_date, tag_name_to_color,
 };
-use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align, Response};
+use zenthra::{Color, ObjectFit, Ui, FontWeight, Align, Response};
 
 pub fn draw_about_window(ui: &mut Ui, state: &mut FileManagerState) {
     if !state.show_about {
@@ -512,12 +512,12 @@ pub fn draw_info_window(ui: &mut Ui, state: &mut FileManagerState) {
                 .show(|ui| {
                     // Header: Icon + Name
                     ui.container().row().gap(12.0).valign(Align::Center).show(|ui| {
-                        let final_icon_path = if item.is_dir {
-                            get_folder_icon_path(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
+                        let final_icon_source = if item.is_dir {
+                            get_folder_icon_source(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
                         } else {
-                            get_item_icon_path(&state.icon_theme, &item.category, &item.extension)
+                            get_item_icon_source(&state.icon_theme, &item.category, &item.extension)
                         };
-                        ui.image(ImageSource::Path(final_icon_path))
+                        ui.image(final_icon_source)
                             .size(36.0, 36.0)
                             .fit(ObjectFit::Contain)
                             .show();

@@ -1,6 +1,6 @@
 use crate::state::{FileManagerState, format_size};
 use super::common::{
-    get_item_icon_path, open_file, truncate_filename, truncate_str,
+    get_item_icon_source, open_file, truncate_filename, truncate_str,
     NF_FA_EXTERNAL_LINK, NF_FA_EDIT, NF_FA_TRASH,
 };
 use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align};
@@ -57,8 +57,8 @@ pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
                                     .fit(ObjectFit::Contain)
                                     .show();
                             } else {
-                                let icon_path = get_item_icon_path(&state.icon_theme, &item.category, &item.extension);
-                                ui.image(ImageSource::Path(icon_path))
+                                let icon_source = get_item_icon_source(&state.icon_theme, &item.category, &item.extension);
+                                ui.image(icon_source)
                                     .size(48.0, 48.0)
                                     .fit(ObjectFit::Contain)
                                     .show();
