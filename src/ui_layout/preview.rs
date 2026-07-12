@@ -8,14 +8,24 @@ use zenthra::{Color, ImageSource, ObjectFit, Ui, FontWeight, Align};
 pub fn draw_preview_pane(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
 
-    ui.container()
+    let mut preview_container = ui.container()
         .width(state.details_width)
         .fill_y()
-        .bg(colors.bg_sidebar)
-        .border(colors.border, 1.0)
         .padding(15.0, 15.0, 15.0, 15.0)
-        .column()
-        .show(|ui| {
+        .column();
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        preview_container = preview_container
+            .bg(colors.bg_sidebar.with_alpha(0.45))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(15.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        preview_container = preview_container
+            .bg(colors.bg_sidebar)
+            .border(colors.border, 1.0);
+    }
+
+    preview_container.show(|ui| {
             // Check if there is a valid selected item
             let selected_item = state.selected_idx.and_then(|idx| state.items.get(idx).cloned());
 

@@ -9,15 +9,31 @@ use std::path::PathBuf;
 
 pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
+    let drives = state.detect_drives();
 
-    ui.container()
+    let active_menu_key = zenthra::Id::from_u64(999999900);
+    let active_menu_id = ui.interaction_state.get(&active_menu_key).copied().map(|v| v as u64).unwrap_or(0);
+    let is_menu_open = state.context_menu_pos.is_some() || active_menu_id != 0;
+    let show_hover = !is_menu_open;
+
+    let mut sidebar_container = ui.container()
         .width(state.sidebar_width)
         .fill_y()
-        .bg(colors.bg_sidebar)
-        .border(colors.border, 1.0)
         .padding(15.0, 15.0, 15.0, 15.0)
-        .column()
-        .show(|ui| {
+        .column();
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        sidebar_container = sidebar_container
+            .bg(colors.bg_sidebar.with_alpha(0.45))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(15.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        sidebar_container = sidebar_container
+            .bg(colors.bg_sidebar)
+            .border(colors.border, 1.0);
+    }
+
+    sidebar_container.show(|ui| {
             // Sidebar title
             ui.text("SHORTCUTS")
                 .size(9.5)
@@ -48,26 +64,36 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
                         Color::TRANSPARENT
                     };
 
-                    let resp = ui.container()
+                    let mut shortcut_container = ui.container()
                         .id(shortcut_id)
                         .row()
                         .gap(10.0)
                         .valign(Align::Center)
                         .fill_x()
                         .padding(6.0, 10.0, 6.0, 10.0)
-                        .bg(bg_color)
-                        .hover_bg(if is_active { colors.bg_active } else { colors.highlight })
-                        .radius_all(6.0)
-                        .show(|ui| {
-                            ui.text(icon)
-                                .size(12.0)
-                                .color(if is_active { colors.text_primary } else { colors.text_muted })
-                                .show();
-                            ui.text(label)
-                                .size(11.5)
-                                .color(if is_active { colors.text_primary } else { colors.text_muted })
-                                .show();
-                        });
+                        .radius_all(6.0);
+
+                    if is_active && state.theme == crate::theme::ThemeMode::Glassmorphism {
+                        shortcut_container = shortcut_container
+                            .bg(colors.bg_active.with_alpha(0.18))
+                            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+                            .backdrop_filter(zenthra::BackdropFilter::new().blur(12.0, zenthra::style::blur::Type::Glassmorphism));
+                    } else {
+                        shortcut_container = shortcut_container
+                            .bg(bg_color)
+                            .hover_bg(if is_active { if show_hover { colors.bg_active } else { Color::TRANSPARENT } } else if show_hover { colors.highlight } else { Color::TRANSPARENT });
+                    }
+
+                    let resp = shortcut_container.show(|ui| {
+                        ui.text(icon)
+                            .size(12.0)
+                            .color(if is_active { colors.text_primary } else { colors.text_muted })
+                            .show();
+                        ui.text(label)
+                            .size(11.5)
+                            .color(if is_active { colors.text_primary } else { colors.text_muted })
+                            .show();
+                    });
 
                     if resp.clicked {
                         state.change_dir(target_path.clone());
@@ -111,6 +137,8 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
 
             ui.spacing(10.0);
             
-            draw_shortcut(ui, NF_FA_HDD, "System Disk", Some(PathBuf::from("/")));
+            for drive in drives {
+                draw_shortcut(ui, NF_FA_HDD, &drive.name, Some(drive.path));
+            }
         });
 }

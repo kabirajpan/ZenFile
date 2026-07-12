@@ -177,13 +177,21 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let mut clicked_idx = None;
     state.item_rects.clear();
 
-    let list_resp = ui.container()
+    let mut list_container = ui.container()
         .width(width)
         .fill_y()
         .column()
-        .bg(colors.bg_panel)
-        .padding(main_padding, main_padding, main_padding, main_padding)
-        .show(|ui| {
+        .padding(main_padding, main_padding, main_padding, main_padding);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        list_container = list_container
+            .bg(colors.bg_panel.with_alpha(0.25))
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(12.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        list_container = list_container.bg(colors.bg_panel);
+    }
+
+    let list_resp = list_container.show(|ui| {
             let avail_w = ui.available_width;
             let inner_w = avail_w - 24.0; // 12.0 padding on left and right
             
@@ -253,7 +261,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             get_item_icon_source(&state.icon_theme, &item.category, &item.extension)
                         };
 
-                        let is_menu_open = state.context_menu_pos.is_some();
+                        let active_menu_key = Id::from_u64(999999900);
+                        let active_menu_id = ui.interaction_state.get(&active_menu_key).copied().map(|v| v as u64).unwrap_or(0);
+                        let is_menu_open = state.context_menu_pos.is_some() || active_menu_id != 0;
                         let show_hover = !is_menu_open;
 
                         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -273,23 +283,33 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
-                        let resp = ui.container()
+                        let mut item_container = ui.container()
                             .id(item_id)
                             .row()
                             .fill_x()
                             .valign(Align::Center)
                             .padding(4.0, 12.0, 4.0, 12.0)
-                            .bg(bg_color)
-                            .hover_bg(if is_selected {
-                                colors.bg_active
-                            } else if show_hover {
-                                colors.highlight
-                            } else {
-                                Color::TRANSPARENT
-                            })
                             .radius_all(4.0)
-                            .clip(true)
-                            .show(|ui| {
+                            .clip(true);
+
+                        if is_selected && state.theme == crate::theme::ThemeMode::Glassmorphism {
+                            item_container = item_container
+                                .bg(colors.bg_active.with_alpha(0.18))
+                                .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+                                .backdrop_filter(zenthra::BackdropFilter::new().blur(12.0, zenthra::style::blur::Type::Glassmorphism));
+                        } else {
+                            item_container = item_container
+                                .bg(bg_color)
+                                .hover_bg(if is_selected {
+                                    colors.bg_active
+                                } else if show_hover {
+                                    colors.highlight
+                                } else {
+                                    Color::TRANSPARENT
+                                });
+                        }
+
+                        let resp = item_container.show(|ui| {
                                 ui.container().width(col_name_w).row().gap(8.0).valign(Align::Center).show(|ui| {
                                     ui.image(final_icon_source)
                                         .size(16.0, 16.0)
@@ -385,7 +405,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         }
 
                         // Drag Detection with Threshold (only when no marquee active)
-                        if resp.pressed && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
+                        if resp.pressed && ui.clicked && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
                             state.drag_pressed_item = Some(item.path.clone());
                             state.drag_start_pos = Some((ui.mouse_x, ui.mouse_y));
                         }
@@ -450,7 +470,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         let item = &filtered_items[idx];
                         let is_selected = state.selected_paths.contains(&item.path);
 
-                        let is_menu_open = state.context_menu_pos.is_some();
+                        let active_menu_key = Id::from_u64(999999900);
+                        let active_menu_id = ui.interaction_state.get(&active_menu_key).copied().map(|v| v as u64).unwrap_or(0);
+                        let is_menu_open = state.context_menu_pos.is_some() || active_menu_id != 0;
                         let show_hover = !is_menu_open;
 
                         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -470,7 +492,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
-                        let resp = ui.container()
+                        let mut item_container = ui.container()
                             .id(item_id)
                             .width(tile_w)
                             .height(tile_h)
@@ -478,18 +500,28 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             .align(Align::Center)
                             .valign(Align::Center)
                             .gap(2.0)
-                            .bg(bg_color)
-                            .hover_bg(if is_selected {
-                                colors.bg_active
-                            } else if show_hover {
-                                colors.highlight
-                            } else {
-                                Color::TRANSPARENT
-                            })
                             .radius_all(6.0)
                             .padding(2.0, 2.0, 2.0, 2.0)
-                            .clip(true)
-                            .show(|ui| {
+                            .clip(true);
+
+                        if is_selected && state.theme == crate::theme::ThemeMode::Glassmorphism {
+                            item_container = item_container
+                                .bg(colors.bg_active.with_alpha(0.18))
+                                .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+                                .backdrop_filter(zenthra::BackdropFilter::new().blur(12.0, zenthra::style::blur::Type::Glassmorphism));
+                        } else {
+                            item_container = item_container
+                                .bg(bg_color)
+                                .hover_bg(if is_selected {
+                                    colors.bg_active
+                                } else if show_hover {
+                                    colors.highlight
+                                } else {
+                                    Color::TRANSPARENT
+                                });
+                        }
+
+                        let resp = item_container.show(|ui| {
                                 let final_icon_source = if item.is_dir {
                                     get_folder_icon_source(&state.icon_theme, &item.name, &state.folder_color, state.flat_folders)
                                 } else {
@@ -572,7 +604,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         }
 
                         // Drag Detection with Threshold (only when no marquee active)
-                        if resp.pressed && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
+                        if resp.pressed && ui.clicked && state.drag_pressed_item.is_none() && state.drag_select_start.is_none() {
                             state.drag_pressed_item = Some(item.path.clone());
                             state.drag_start_pos = Some((ui.mouse_x, ui.mouse_y));
                         }
@@ -667,7 +699,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let ended_drag_select = !ui.mouse_down && state.drag_select_start.is_some();
 
     // Handle background drag-selection start
-    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() && state.context_menu_pos.is_none() {
+    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() && state.context_menu_pos.is_none() && !state.active_resize_sidebar && !state.active_resize_details {
         if state.drag_select_start.is_none() {
             state.drag_select_start = Some((ui.mouse_x, ui.mouse_y));
             state.drag_select_current = Some((ui.mouse_x, ui.mouse_y));
@@ -734,8 +766,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
             .absolute(x1, y1)
             .width(w)
             .height(h)
-            .bg(Color::rgba(255.0 / 255.0, 214.0 / 255.0, 0.0 / 255.0, 0.15))
-            .border(Color::rgba(255.0 / 255.0, 214.0 / 255.0, 0.0 / 255.0, 0.6), 1.0)
+            .bg(colors.accent.with_alpha(0.15))
+            .border(colors.accent.with_alpha(0.6), 1.0)
             .show(|_| {});
     }
 

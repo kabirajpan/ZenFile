@@ -14,12 +14,23 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
     const BAR_H: f32 = 36.0;
     const RIGHT_W: f32 = BTN_W * 3.0 + 36.0; // 96.0
 
-    ui.container()
+    let mut title_container = ui.container()
         .full_width()
         .height(BAR_H)
-        .bg(colors.bg_sidebar)
-        .border(colors.border, 1.0)
-        .row()
+        .row();
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        title_container = title_container
+            .bg(colors.bg_sidebar.with_alpha(0.4))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(15.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        title_container = title_container
+            .bg(colors.bg_sidebar)
+            .border(colors.border, 1.0);
+    }
+
+    title_container
         .valign(Align::Center)
         .no_wrap()
         .show(|ui| {
@@ -206,6 +217,11 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                             state.theme = ThemeMode::Light;
                             ui.request_redraw();
                         }
+                        let glass_mark = if state.theme == ThemeMode::Glassmorphism { "● " } else { "  " };
+                        if ui.menu_item(&format!("{}Glassmorphism", glass_mark)).show().clicked {
+                            state.theme = ThemeMode::Glassmorphism;
+                            ui.request_redraw();
+                        }
 
                         ui.spacing(4.0);
 
@@ -271,6 +287,36 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                                 }
                             }
                         });
+
+                        ui.sub_menu("Glow 1 Color").show(|ui| {
+                            for (color_id, color_name) in ACCENT_COLOR_OPTIONS {
+                                let is_active = state.glassmorphism_glow1_color == *color_id;
+                                let label = if is_active {
+                                    format!("● {}", color_name)
+                                } else {
+                                    format!("  {}", color_name)
+                                };
+                                if ui.menu_item(&label).show().clicked {
+                                    state.glassmorphism_glow1_color = color_id.to_string();
+                                    ui.request_redraw();
+                                }
+                            }
+                        });
+
+                        ui.sub_menu("Glow 2 Color").show(|ui| {
+                            for (color_id, color_name) in ACCENT_COLOR_OPTIONS {
+                                let is_active = state.glassmorphism_glow2_color == *color_id;
+                                let label = if is_active {
+                                    format!("● {}", color_name)
+                                } else {
+                                    format!("  {}", color_name)
+                                };
+                                if ui.menu_item(&label).show().clicked {
+                                    state.glassmorphism_glow2_color = color_id.to_string();
+                                    ui.request_redraw();
+                                }
+                            }
+                        });
                     });
                     ui.menu("Help").show(|ui| {
                         if ui.menu_item("About ZenFile").show().clicked {
@@ -310,7 +356,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         .radius_all(BTN_W / 2.0)
                         .bg(if min_hov {
                             match state.theme {
-                                ThemeMode::Dark => Color::rgba(1.0, 1.0, 1.0, 0.08),
+                                ThemeMode::Dark | ThemeMode::Glassmorphism => Color::rgba(1.0, 1.0, 1.0, 0.08),
                                 ThemeMode::Light => Color::rgba(0.0, 0.0, 0.0, 0.06),
                             }
                         } else { Color::TRANSPARENT })
@@ -334,7 +380,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         .radius_all(BTN_W / 2.0)
                         .bg(if max_hov {
                             match state.theme {
-                                ThemeMode::Dark => Color::rgba(1.0, 1.0, 1.0, 0.08),
+                                ThemeMode::Dark | ThemeMode::Glassmorphism => Color::rgba(1.0, 1.0, 1.0, 0.08),
                                 ThemeMode::Light => Color::rgba(0.0, 0.0, 0.0, 0.06),
                             }
                         } else { Color::TRANSPARENT })

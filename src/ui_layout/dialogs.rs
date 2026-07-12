@@ -13,17 +13,27 @@ pub fn draw_about_window(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
     let mut about_pos = [state.about_x, state.about_y];
 
-    ui.window("About ZenFile", &mut state.show_about, &mut about_pos)
+    let mut win = ui.window("About ZenFile", &mut state.show_about, &mut about_pos)
         .size(360.0, 240.0)
         .modal(true)
-        .bg(colors.bg_panel)
-        .border(colors.accent, 1.5)
         .radius_all(12.0)
-        .header_bg(colors.bg_base)
+        .header_bg(if state.theme != crate::theme::ThemeMode::Light { colors.bg_base.with_alpha(0.5) } else { colors.bg_base })
         .header_text_color(colors.text_primary)
         .header_height(40.0)
-        .closable(true)
-        .show(|ui| {
+        .closable(true);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        win = win
+            .bg(colors.bg_panel.with_alpha(0.65))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.08), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(18.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        win = win
+            .bg(colors.bg_panel)
+            .border(colors.accent, 1.5);
+    }
+
+    win.show(|ui| {
             ui.container()
                 .full_width()
                 .padding_all(14.0)
@@ -129,18 +139,28 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
         y = ui.max_y - menu_h - 5.0;
     }
 
-    ui.container()
+    let mut menu_container = ui.container()
         .id("context_menu_root")
         .overlay()
         .absolute(x, y)
         .width(menu_w)
         .height(menu_h)
-        .bg(colors.bg_panel)
-        .border(colors.border, 1.0)
         .radius_all(8.0)
         .padding(6.0, 6.0, 6.0, 6.0)
-        .column()
-        .show(|ui| {
+        .column();
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        menu_container = menu_container
+            .bg(colors.bg_panel.with_alpha(0.6))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.08), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(15.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        menu_container = menu_container
+            .bg(colors.bg_panel)
+            .border(colors.border, 1.0);
+    }
+
+    menu_container.show(|ui| {
             if let Some(target_idx) = state.context_menu_target {
                 let item = match state.items.get(target_idx) {
                     Some(it) => it.clone(),
@@ -494,16 +514,26 @@ pub fn draw_info_window(ui: &mut Ui, state: &mut FileManagerState) {
 
     let colors = state.colors();
 
-    ui.window("Get Info", &mut state.info_window_open, &mut state.info_window_pos)
+    let mut win = ui.window("Get Info", &mut state.info_window_open, &mut state.info_window_pos)
         .size(320.0, 280.0)
-        .bg(colors.bg_panel)
-        .border(colors.accent, 1.0)
         .radius_all(10.0)
-        .header_bg(colors.bg_base)
+        .header_bg(if state.theme != crate::theme::ThemeMode::Light { colors.bg_base.with_alpha(0.5) } else { colors.bg_base })
         .header_text_color(colors.text_primary)
         .header_height(36.0)
-        .closable(true)
-        .show(|ui| {
+        .closable(true);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        win = win
+            .bg(colors.bg_panel.with_alpha(0.65))
+            .border(Color::rgba(25.0/255.0, 150.0/255.0, 255.0/255.0, 0.08), 1.0) // matching accent border
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(18.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        win = win
+            .bg(colors.bg_panel)
+            .border(colors.accent, 1.0);
+    }
+
+    win.show(|ui| {
             ui.container()
                 .full_width()
                 .padding_all(16.0)

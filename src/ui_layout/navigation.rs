@@ -8,13 +8,24 @@ use zenthra::{Color, Ui, Align};
 pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
 
-    ui.container()
+    let mut nav_container = ui.container()
         .fill_x()
         .height(42.0)
-        .bg(colors.bg_base)
-        .border(colors.border, 1.0)
         .padding(6.0, 12.0, 6.0, 12.0)
-        .row()
+        .row();
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        nav_container = nav_container
+            .bg(colors.bg_base.with_alpha(0.3))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.04), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(15.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        nav_container = nav_container
+            .bg(colors.bg_base)
+            .border(colors.border, 1.0);
+    }
+
+    nav_container
         .valign(Align::Center)
         .show(|ui| {
             let start_x = ui.cursor_x;

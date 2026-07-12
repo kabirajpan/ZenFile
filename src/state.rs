@@ -2,6 +2,12 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use crate::theme::{ThemeMode, ThemeColors};
 
+#[derive(Debug, Clone)]
+pub struct DeviceDrive {
+    pub name: String,
+    pub path: PathBuf,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ViewMode {
     List,
@@ -46,6 +52,8 @@ pub struct FileManagerState {
     pub theme: ThemeMode,
     pub accent_color: String,
     pub highlight_color: String,
+    pub glassmorphism_glow1_color: String,
+    pub glassmorphism_glow2_color: String,
     pub show_about: bool,
     pub text_preview: Option<String>,
     pub about_x: f32,
@@ -93,6 +101,87 @@ impl FileManagerState {
         ThemeColors::resolve(self.theme, &self.accent_color, &self.highlight_color)
     }
 
+    pub fn detect_drives(&self) -> Vec<DeviceDrive> {
+        let mut drives = Vec::new();
+        
+        #[cfg(target_os = "windows")]
+        {
+            for letter in b'A'..=b'Z' {
+                let drive_path = PathBuf::from(format!("{}:\\", letter as char));
+                if drive_path.exists() {
+                    let name = if letter as char == 'C' {
+                        "System Disk (C:)".to_string()
+                    } else {
+                        format!("Local Disk ({}:)", letter as char)
+                    };
+                    drives.push(DeviceDrive { name, path: drive_path });
+                }
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            drives.push(DeviceDrive { name: "Macintosh HD".to_string(), path: PathBuf::from("/") });
+            if let Ok(entries) = std::fs::read_dir("/Volumes") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Volume".to_string());
+                        drives.push(DeviceDrive { name, path });
+                    }
+                }
+            }
+        }
+
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        {
+            drives.push(DeviceDrive { name: "System Disk".to_string(), path: PathBuf::from("/") });
+            
+            // Scan /media/
+            if let Ok(entries) = std::fs::read_dir("/media") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Ok(mounts) = std::fs::read_dir(&path) {
+                            for mount in mounts.flatten() {
+                                let mount_path = mount.path();
+                                let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                drives.push(DeviceDrive { name, path: mount_path });
+                            }
+                        }
+                    }
+                }
+            }
+            // Scan /run/media/
+            if let Ok(entries) = std::fs::read_dir("/run/media") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Ok(mounts) = std::fs::read_dir(&path) {
+                            for mount in mounts.flatten() {
+                                let mount_path = mount.path();
+                                let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                drives.push(DeviceDrive { name, path: mount_path });
+                            }
+                        }
+                    }
+                }
+            }
+            // Scan /mnt/
+            if let Ok(entries) = std::fs::read_dir("/mnt") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Mount".to_string());
+                        drives.push(DeviceDrive { name, path });
+                    }
+                }
+            }
+        }
+
+        drives
+    }
+
     pub fn new() -> Self {
         // Start in user home directory (or current directory fallback)
         let initial_dir = dirs::home_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
@@ -107,6 +196,8 @@ impl FileManagerState {
             theme: ThemeMode::Dark,
             accent_color: "yellow".to_string(),
             highlight_color: "gray".to_string(),
+            glassmorphism_glow1_color: "purple".to_string(),
+            glassmorphism_glow2_color: "blue".to_string(),
             show_about: true,
             text_preview: None,
             about_x: 390.0,

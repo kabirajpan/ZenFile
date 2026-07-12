@@ -4,6 +4,7 @@ use zenthra::{Color, ImageSource};
 pub enum ThemeMode {
     Dark,
     Light,
+    Glassmorphism,
 }
 
 pub const ACCENT_COLOR_OPTIONS: &[(&str, &str)] = &[
@@ -33,7 +34,6 @@ pub const HIGHLIGHT_COLOR_OPTIONS: &[(&str, &str)] = &[
     ("turquoise", "Turquoise"),
     ("violet", "Violet"),
     ("lime", "Lime"),
-    ("white", "White"),
 ];
 
 pub fn named_color(name: &str, mode: ThemeMode) -> Color {
@@ -50,7 +50,7 @@ pub fn named_color(name: &str, mode: ThemeMode) -> Color {
         "lime" => Color::rgb(132.0 / 255.0, 204.0 / 255.0, 22.0 / 255.0),
         "gray" => Color::rgb(136.0 / 255.0, 136.0 / 255.0, 136.0 / 255.0),
         "white" => match mode {
-            ThemeMode::Dark => Color::rgb(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0),
+            ThemeMode::Dark | ThemeMode::Glassmorphism => Color::rgb(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0),
             ThemeMode::Light => Color::rgb(40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0),
         },
         _ => Color::rgb(255.0 / 255.0, 214.0 / 255.0, 0.0 / 255.0),
@@ -60,12 +60,12 @@ pub fn named_color(name: &str, mode: ThemeMode) -> Color {
 fn resolve_highlight(name: &str, mode: ThemeMode) -> Color {
     if name == "gray" {
         match mode {
-            ThemeMode::Dark => Color::rgb(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0).with_alpha(0.08),
+            ThemeMode::Dark | ThemeMode::Glassmorphism => Color::rgb(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0).with_alpha(0.08),
             ThemeMode::Light => Color::rgb(0.0, 0.0, 0.0).with_alpha(0.08),
         }
     } else {
         let alpha = match mode {
-            ThemeMode::Dark => 0.22,
+            ThemeMode::Dark | ThemeMode::Glassmorphism => 0.22,
             ThemeMode::Light => 0.18,
         };
         named_color(name, mode).with_alpha(alpha)
@@ -93,7 +93,7 @@ impl ThemeColors {
         let bg_active = highlight;
 
         match mode {
-            ThemeMode::Dark => Self {
+            ThemeMode::Dark | ThemeMode::Glassmorphism => Self {
                 bg_base: Color::rgb(0.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0),
                 bg_panel: Color::rgb(2.0 / 255.0, 2.0 / 255.0, 2.0 / 255.0),
                 bg_sidebar: Color::rgb(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0),
