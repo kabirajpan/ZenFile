@@ -1,7 +1,7 @@
 use crate::state::{FileManagerState, ViewMode, SortBy, SortOrder};
 use crate::theme::{ThemeMode, ACCENT_COLOR_OPTIONS, HIGHLIGHT_COLOR_OPTIONS};
 use super::common::NF_FA_FOLDER;
-use zenthra::{Color, Ui, FontWeight, WindowAction, Align, Id};
+use zenthra::{Color, Ui, FontWeight, Align, Id};
 
 pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
@@ -108,7 +108,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                             }
                         }
                         if ui.menu_item("Close Window").shortcut("Ctrl+W").show().clicked {
-                            ui.window_actions.push(WindowAction::Close);
+                            ui.close();
                         }
                     });
                     ui.menu("Edit").show(|ui| {
@@ -336,7 +336,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                 .show(|_| {});
 
             if drag_resp.pressed {
-                ui.window_actions.push(WindowAction::Drag);
+                ui.drag();
             }
 
             // RIGHT: window controls
@@ -369,7 +369,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let prev = ui.interaction_state.insert(min_key, if h { 1.0 } else { 0.0 });
                     if prev != Some(if h { 1.0 } else { 0.0 }) { ui.needs_redraw = true; }
                     if min_resp.clicked {
-                        ui.window_actions.push(WindowAction::Minimize);
+                        ui.minimize();
                     }
 
                     // Maximize
@@ -393,7 +393,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let prev = ui.interaction_state.insert(max_key, if h { 1.0 } else { 0.0 });
                     if prev != Some(if h { 1.0 } else { 0.0 }) { ui.needs_redraw = true; }
                     if max_resp.clicked {
-                        ui.window_actions.push(WindowAction::Maximize);
+                        ui.maximize();
                     }
 
                     // Close
@@ -413,7 +413,7 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
                     let prev = ui.interaction_state.insert(cls_key, if h { 1.0 } else { 0.0 });
                     if prev != Some(if h { 1.0 } else { 0.0 }) { ui.needs_redraw = true; }
                     if cls_resp.clicked {
-                        ui.window_actions.push(WindowAction::Close);
+                        ui.close();
                     }
                 });
         });

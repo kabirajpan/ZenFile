@@ -70,6 +70,11 @@ fn main() {
                 .fill()
                 .bg(colors.bg_base)
                 .show(|ui| {
+                    if let Some(msg) = state.zendrop_status_msg.lock().unwrap().take() {
+                        state.zendrop_send_status = msg;
+                        ui.request_redraw();
+                    }
+
                     // Subtle background glows to show through the glassmorphic panels
                     if state.theme == ThemeMode::Glassmorphism {
                         let glow1_color = theme::named_color(&state.glassmorphism_glow1_color, state.theme);
@@ -95,6 +100,8 @@ fn main() {
 
                     // 2. Navigation toolbar
                     ui_layout::draw_navigation_bar(ui, &mut state);
+
+
 
                     // 3. Central work area (Sidebar + File List + Preview panel)
                     ui.container()
@@ -139,10 +146,17 @@ fn main() {
                             let splitters_w = if state.sidebar_visible { 4.0 } else { 0.0 } + if state.details_visible { 4.0 } else { 0.0 };
                             let file_list_w = (ui.available_width - sidebar_w - details_w - splitters_w).max(200.0);
 
-                            // Main file grid list
-                            ui_layout::draw_file_list(ui, &mut state, file_list_w);
+                            // Main content (File Grid or Dashboard)
+                            match state.active_screen {
+                                crate::state::ActiveScreen::Browser => {
+                                    ui_layout::draw_file_list(ui, &mut state, file_list_w);
+                                }
+                                crate::state::ActiveScreen::Dashboard => {
+                                    ui_layout::draw_dashboard(ui, &mut state, file_list_w);
+                                }
+                            }
 
-                            // Right preview details pane
+                            // Right preview / info pane
                             if state.details_visible {
                                  // Details Splitter handle
                                  let splitter_res = ui.container()
@@ -169,7 +183,14 @@ fn main() {
                                     ui.request_redraw();
                                 }
 
-                                ui_layout::draw_preview_pane(ui, &mut state);
+                                match state.active_screen {
+                                    crate::state::ActiveScreen::Browser => {
+                                        ui_layout::draw_preview_pane(ui, &mut state);
+                                    }
+                                    crate::state::ActiveScreen::Dashboard => {
+                                        ui_layout::draw_dashboard_sidebar(ui, &mut state);
+                                    }
+                                }
                             }
                         });
 
@@ -180,6 +201,13 @@ fn main() {
                     ui_layout::draw_about_window(ui, &mut state);
                     ui_layout::draw_context_menu(ui, &mut state);
                     ui_layout::draw_info_window(ui, &mut state);
+                    ui_layout::draw_wifi_dialog(ui, &mut state);
+                    ui_layout::draw_zendrop_send_dialog(ui, &mut state);
+
+                    // 6. ZenDrop overlay panel
+                    if state.zendrop_open {
+                        ui_layout::draw_zendrop_panel(ui, &mut state);
+                    }
                 });
         })
         .run();

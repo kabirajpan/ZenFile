@@ -599,3 +599,252 @@ pub fn draw_info_window(ui: &mut Ui, state: &mut FileManagerState) {
                 });
         });
 }
+
+pub fn draw_wifi_dialog(ui: &mut Ui, state: &mut FileManagerState) {
+    let ssid = match state.wifi_connect_ssid.clone() {
+        Some(s) => s,
+        None => return,
+    };
+
+    let result = {
+        let mut res = state.wifi_connection_result.lock().unwrap();
+        res.take()
+    };
+    if let Some(r) = result {
+        state.wifi_connecting = false;
+        match r {
+            Ok(connected_ssid) => {
+                state.wifi_connect_ssid = None;
+                state.zendrop_network_name = connected_ssid;
+                state.refresh_zendrop();
+            }
+            Err(e) => {
+                state.wifi_connect_error = Some(e);
+            }
+        }
+        ui.request_redraw();
+    }
+
+    let colors = state.colors();
+    let mut win_pos = [
+        (ui.width as f32 - 340.0) / 2.0,
+        (ui.height as f32 - 180.0) / 2.0,
+    ];
+
+    let mut show_win = true;
+    let mut win = ui.window("Connect to Wi-Fi", &mut show_win, &mut win_pos)
+        .size(340.0, 180.0)
+        .modal(true)
+        .radius_all(12.0)
+        .header_bg(if state.theme != crate::theme::ThemeMode::Light { colors.bg_base.with_alpha(0.5) } else { colors.bg_base })
+        .header_text_color(colors.text_primary)
+        .header_height(40.0)
+        .closable(true);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        win = win
+            .bg(colors.bg_panel.with_alpha(0.75))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.08), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(18.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        win = win
+            .bg(colors.bg_panel)
+            .border(colors.accent, 1.5);
+    }
+
+    win.show(|ui| {
+        ui.container()
+            .full_width()
+            .padding_all(14.0)
+            .column()
+            .gap(10.0)
+            .show(|ui| {
+                ui.text(&format!("Enter password for \"{}\"", ssid))
+                    .size(11.5)
+                    .weight(FontWeight::Bold)
+                    .color(colors.text_primary)
+                    .show();
+
+                if let Some(ref err) = state.wifi_connect_error {
+                    ui.text(err)
+                        .size(10.0)
+                        .color(Color::rgb(220.0/255.0, 50.0/255.0, 50.0/255.0))
+                        .show();
+                }
+
+                ui.input(&mut state.wifi_connect_password, "wifi_pass_input")
+                    .width(312.0)
+                    .show();
+
+                ui.spacing(10.0);
+
+                ui.container().row().gap(8.0).halign(Align::Right).show(|ui| {
+                    let cancel_btn = ui.button("Cancel")
+                        .width(70.0)
+                        .bg(colors.highlight)
+                        .radius_all(6.0)
+                        .show();
+                    if cancel_btn.clicked {
+                        state.wifi_connect_ssid = None;
+                        ui.request_redraw();
+                    }
+
+                    if state.wifi_connecting {
+                        ui.text("Connecting...")
+                            .size(11.0)
+                            .color(colors.accent)
+                            .show();
+                    } else {
+                        let connect_btn = ui.button("Connect")
+                            .width(80.0)
+                            .bg(colors.accent)
+                            .text_color(colors.bg_base)
+                            .radius_all(6.0)
+                            .show();
+                        if connect_btn.clicked {
+                            state.connect_to_wifi(ssid.clone(), Some(state.wifi_connect_password.clone()));
+                            ui.request_redraw();
+                        }
+                    }
+                });
+            });
+    });
+
+    if !show_win {
+        state.wifi_connect_ssid = None;
+    }
+}
+
+pub fn draw_zendrop_send_dialog(ui: &mut Ui, state: &mut FileManagerState) {
+    let device = match state.zendrop_send_target.clone() {
+        Some(d) => d,
+        None => return,
+    };
+
+    let progress_val = state.zendrop_progress.load(std::sync::atomic::Ordering::SeqCst) as f32 / 100.0;
+    state.zendrop_send_progress = progress_val;
+
+    if progress_val >= 1.0 {
+        state.zendrop_send_status = "Transfer Complete!".to_string();
+    } else if state.zendrop_send_status.is_empty() {
+        let count = state.selected_paths.len();
+        if count > 0 {
+            state.zendrop_send_status = format!("Sending {} selected file{}...", count, if count == 1 { "" } else { "s" });
+        } else {
+            state.zendrop_send_status = format!("Sending folder {}...", state.current_dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default());
+        }
+    }
+
+    let colors = state.colors();
+    let mut win_pos = [
+        (ui.width as f32 - 320.0) / 2.0,
+        (ui.height as f32 - 220.0) / 2.0,
+    ];
+
+    let mut show_win = true;
+    let mut win = ui.window("ZenDrop Share", &mut show_win, &mut win_pos)
+        .size(320.0, 220.0)
+        .modal(true)
+        .radius_all(12.0)
+        .header_bg(if state.theme != crate::theme::ThemeMode::Light { colors.bg_base.with_alpha(0.5) } else { colors.bg_base })
+        .header_text_color(colors.text_primary)
+        .header_height(40.0)
+        .closable(true);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        win = win
+            .bg(colors.bg_panel.with_alpha(0.75))
+            .border(Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.08), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(18.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        win = win
+            .bg(colors.bg_panel)
+            .border(colors.accent, 1.5);
+    }
+
+    win.show(|ui| {
+        ui.container()
+            .full_width()
+            .padding_all(16.0)
+            .column()
+            .gap(12.0)
+            .halign(Align::Center)
+            .show(|ui| {
+                ui.container()
+                    .width(48.0)
+                    .height(48.0)
+                    .radius_all(24.0)
+                    .bg(colors.accent.with_alpha(0.15))
+                    .halign(Align::Center)
+                    .valign(Align::Center)
+                    .show(|ui| {
+                        ui.text("\u{f10b}")
+                            .size(22.0)
+                            .color(colors.accent)
+                            .show();
+                    });
+
+                ui.text(&device.hostname)
+                    .size(13.0)
+                    .weight(FontWeight::Bold)
+                    .color(colors.text_primary)
+                    .show();
+
+                ui.text(&state.zendrop_send_status)
+                    .size(10.5)
+                    .color(colors.text_muted)
+                    .show();
+
+                ui.container()
+                    .width(260.0)
+                    .height(6.0)
+                    .bg(colors.border)
+                    .radius_all(3.0)
+                    .show(|ui| {
+                        let filled = progress_val * ui.available_width;
+                        ui.container()
+                            .width(filled)
+                            .fill_y()
+                            .bg(colors.accent)
+                            .radius_all(3.0)
+                            .show(|_| {});
+                    });
+
+                ui.text(&format!("{:.0}%", progress_val * 100.0))
+                    .size(11.0)
+                    .weight(FontWeight::Bold)
+                    .color(colors.accent)
+                    .show();
+
+                ui.spacing(4.0);
+
+                if progress_val >= 1.0 {
+                    let done_btn = ui.button("Done")
+                        .width(80.0)
+                        .bg(colors.accent)
+                        .text_color(colors.bg_base)
+                        .radius_all(6.0)
+                        .show();
+                    if done_btn.clicked {
+                        state.zendrop_send_target = None;
+                        ui.request_redraw();
+                    }
+                } else {
+                    let cancel_btn = ui.button("Cancel")
+                        .width(80.0)
+                        .bg(colors.highlight)
+                        .radius_all(6.0)
+                        .show();
+                    if cancel_btn.clicked {
+                        state.zendrop_send_target = None;
+                        ui.request_redraw();
+                    }
+                }
+            });
+    });
+
+    if !show_win {
+        state.zendrop_send_target = None;
+    }
+}
+

@@ -5,10 +5,20 @@ use super::common::{
     truncate_filename, truncate_str, format_date, open_file,
     is_drag_drop_hovered, drop_target_bg,
 };
-use zenthra::{Color, ObjectFit, Ui, FontWeight, Align, Id, PlatformEvent};
+use zenthra::{Color, ObjectFit, Ui, FontWeight, Align, Id, PlatformEvent, Rect};
 
 pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     let colors = state.colors();
+
+    let list_container_id = Id::from_u64(888888889);
+    
+    // Get the previous frame's layout for list_container to constrain click and marquee coordinates
+    let list_rect = if let Some(rect) = ui.screen_layout_cache.get(&list_container_id) {
+        *rect
+    } else {
+        // Fallback: full window height but exclude titlebar/nav area by starting at y=100.0
+        Rect::new(220.0, 100.0, (ui.width as f32 - 220.0).max(100.0), (ui.height as f32 - 100.0).max(100.0))
+    };
 
     // Inline Rename Key & Click Handler
     if let Some(rename_path) = state.renaming_item.clone() {
@@ -77,6 +87,12 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     }
                     winit::keyboard::KeyCode::ShiftLeft | winit::keyboard::KeyCode::ShiftRight => {
                         state.shift_pressed = true;
+                    }
+                    winit::keyboard::KeyCode::AltLeft | winit::keyboard::KeyCode::AltRight => {
+                        state.alt_pressed = true;
+                    }
+                    winit::keyboard::KeyCode::SuperLeft | winit::keyboard::KeyCode::SuperRight => {
+                        state.super_pressed = true;
                     }
                     winit::keyboard::KeyCode::KeyA => {
                         if state.ctrl_pressed {
@@ -161,6 +177,12 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     winit::keyboard::KeyCode::ShiftLeft | winit::keyboard::KeyCode::ShiftRight => {
                         state.shift_pressed = false;
                     }
+                    winit::keyboard::KeyCode::AltLeft | winit::keyboard::KeyCode::AltRight => {
+                        state.alt_pressed = false;
+                    }
+                    winit::keyboard::KeyCode::SuperLeft | winit::keyboard::KeyCode::SuperRight => {
+                        state.super_pressed = false;
+                    }
                     _ => {}
                 }
             }
@@ -178,6 +200,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     state.item_rects.clear();
 
     let mut list_container = ui.container()
+        .id(list_container_id)
         .width(width)
         .fill_y()
         .column()
@@ -650,56 +673,69 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
             }
 
             if let Some(idx) = clicked_idx {
-                item_clicked = true;
-                let now = std::time::Instant::now();
-                let is_double = if let (Some(last_time), Some(last_idx)) = (state.last_click_time, state.last_clicked_idx) {
-                    let elapsed = now.duration_since(last_time).as_millis();
-                    last_idx == idx && elapsed >= 80 && elapsed < 400
-                } else {
-                    false
-                };
-
-                if is_double {
-                    state.last_click_time = None;
-                    state.last_clicked_idx = None;
-                    state.deferred_click_idx = None;
-                    let target_path = filtered_items[idx].path.clone();
-                    if filtered_items[idx].is_dir {
-                        state.change_dir(target_path);
+                if !state.super_pressed && !state.alt_pressed {
+                    item_clicked = true;
+                    let now = std::time::Instant::now();
+                    let is_double = if let (Some(last_time), Some(last_idx)) = (state.last_click_time, state.last_clicked_idx) {
+                        let elapsed = now.duration_since(last_time).as_millis();
+                        last_idx == idx && elapsed >= 80 && elapsed < 400
                     } else {
-                        open_file(&target_path);
-                    }
-                } else {
-                    state.last_click_time = Some(now);
-                    state.last_clicked_idx = Some(idx);
+                        false
+                    };
 
-                    let path = &filtered_items[idx].path;
-                    let is_already_selected = state.selected_paths.contains(path);
-                    let has_modifiers = state.ctrl_pressed || state.shift_pressed;
-
-                    if is_already_selected && !has_modifiers {
-                        state.deferred_click_idx = Some(idx);
-                    } else {
+                    if is_double {
+                        state.last_click_time = None;
+                        state.last_clicked_idx = None;
                         state.deferred_click_idx = None;
-                        if state.ctrl_pressed {
-                            state.toggle_select(idx);
-                        } else if state.shift_pressed && state.select_anchor.is_some() {
-                            let anchor = state.select_anchor.unwrap();
-                            state.selected_paths.clear();
-                            state.select_range(anchor, idx);
+                        let target_path = filtered_items[idx].path.clone();
+                        if filtered_items[idx].is_dir {
+                            state.change_dir(target_path);
                         } else {
-                            state.select_single(idx);
+                            open_file(&target_path);
+                        }
+                    } else {
+                        state.last_click_time = Some(now);
+                        state.last_clicked_idx = Some(idx);
+
+                        let path = &filtered_items[idx].path;
+                        let is_already_selected = state.selected_paths.contains(path);
+                        let has_modifiers = state.ctrl_pressed || state.shift_pressed;
+
+                        if is_already_selected && !has_modifiers {
+                            state.deferred_click_idx = Some(idx);
+                        } else {
+                            state.deferred_click_idx = None;
+                            if state.ctrl_pressed {
+                                state.toggle_select(idx);
+                            } else if state.shift_pressed && state.select_anchor.is_some() {
+                                let anchor = state.select_anchor.unwrap();
+                                state.selected_paths.clear();
+                                state.select_range(anchor, idx);
+                            } else {
+                                state.select_single(idx);
+                            }
                         }
                     }
+                    ui.request_redraw();
                 }
-                ui.request_redraw();
+            } else if ui.clicked {
+                state.last_click_time = None;
+                state.last_clicked_idx = None;
             }
         });
 
     let ended_drag_select = !ui.mouse_down && state.drag_select_start.is_some();
 
+    let margin_x = 8.0;
+    let header_height = if is_list { 38.0 } else { 12.0 };
+
+    let mouse_in_list = ui.mouse_x >= list_rect.origin.x + margin_x
+        && ui.mouse_x <= list_rect.origin.x + list_rect.size.width - margin_x
+        && ui.mouse_y >= list_rect.origin.y + header_height
+        && ui.mouse_y <= list_rect.origin.y + list_rect.size.height - 8.0;
+
     // Handle background drag-selection start
-    if list_resp.pressed && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() && state.context_menu_pos.is_none() && !state.active_resize_sidebar && !state.active_resize_details {
+    if list_resp.pressed && mouse_in_list && !item_pressed && !item_right_clicked && state.dragging_item.is_none() && state.drag_pressed_item.is_none() && state.context_menu_pos.is_none() && !state.active_resize_sidebar && !state.active_resize_details && !state.super_pressed && !state.alt_pressed {
         if state.drag_select_start.is_none() {
             state.drag_select_start = Some((ui.mouse_x, ui.mouse_y));
             state.drag_select_current = Some((ui.mouse_x, ui.mouse_y));
@@ -713,7 +749,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
     // Update drag-selection rectangle and select intersecting files
     if ui.mouse_down && state.drag_select_start.is_some() {
-        state.drag_select_current = Some((ui.mouse_x, ui.mouse_y));
+        let curr_x = ui.mouse_x.clamp(list_rect.origin.x + margin_x, list_rect.origin.x + list_rect.size.width - margin_x);
+        let curr_y = ui.mouse_y.clamp(list_rect.origin.y + header_height, list_rect.origin.y + list_rect.size.height - 8.0);
+        state.drag_select_current = Some((curr_x, curr_y));
         
         if let (Some(start), Some(curr)) = (state.drag_select_start, state.drag_select_current) {
             let x1 = start.0.min(curr.0);

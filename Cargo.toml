@@ -16,3 +16,6 @@ rust-embed = "8.5.0"
 
 [workspace]
 # Empty workspace table isolates this package from being automatically grouped into parent workspaces.
+
+[patch.crates-io]
+winit = { git = "https://github.com/rust-windowing/winit", rev = "refs/pull/4580/head" }

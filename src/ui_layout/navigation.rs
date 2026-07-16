@@ -1,6 +1,6 @@
 use crate::state::FileManagerState;
 use super::common::{
-    NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH,
+    NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH, NF_FA_WIFI,
     is_drag_drop_hovered, drop_target_bg,
 };
 use zenthra::{Color, Ui, Align};
@@ -219,6 +219,33 @@ pub fn draw_navigation_bar(ui: &mut Ui, state: &mut FileManagerState) {
                         }
                     }
                 });
+
+            // ZenDrop toggle button
+            let zendrop_active = state.zendrop_open;
+            let zendrop_btn_id = zenthra::Id::from_u64(999_222_000);
+            let zendrop_btn = ui.button(NF_FA_WIFI)
+                .id(zendrop_btn_id)
+                .width(28.0)
+                .size(12.0)
+                .bg(if zendrop_active { colors.bg_panel } else { Color::TRANSPARENT })
+                .hover_bg(colors.highlight)
+                .text_color(if zendrop_active { colors.accent } else { colors.text_muted })
+                .radius_all(4.0)
+                .padding(4.0, 0.0, 4.0, 0.0)
+                .show();
+
+            let resolved_btn_id = super::common::resolve_widget_id(ui, zendrop_btn_id);
+            if let Some(rect) = ui.screen_layout_cache.get(&resolved_btn_id) {
+                state.zendrop_btn_pos = Some((
+                    rect.origin.x + rect.size.width / 2.0,
+                    rect.origin.y + rect.size.height + 6.0,
+                ));
+            }
+
+            if zendrop_btn.clicked {
+                state.zendrop_open = !state.zendrop_open;
+                ui.request_redraw();
+            }
 
             // Copy Path Button beside breadcrumbs
             let copy_path_btn = ui.button("\u{f0c5}") // NF_FA_COPY

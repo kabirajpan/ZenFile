@@ -48,6 +48,8 @@ pub fn tag_name_to_color(name: &str) -> Color {
 
 // Nerd Font Icon constants
 pub const NF_FA_FOLDER: &str = "\u{f07b}";
+pub const NF_FA_TACHOMETER: &str = "\u{f0e4}";
+pub const NF_FA_WIFI: &str = "\u{f1eb}";  // fa-wifi — used for ZenDrop
 pub const NF_FA_DESKTOP: &str = "\u{f108}";
 pub const NF_FA_HOME: &str = "\u{f015}";
 pub const NF_FA_DOWNLOAD: &str = "\u{f019}";
@@ -65,6 +67,10 @@ pub const NF_FA_SEARCH: &str = "\u{f002}";
 pub const NF_FA_TRASH: &str = "\u{f1f8}";
 pub const NF_FA_EDIT: &str = "\u{f040}";
 pub const NF_FA_EXTERNAL_LINK: &str = "\u{f08e}";
+pub const NF_FA_EJECT: &str = "\u{f052}";
+pub const _NF_FA_PLAY: &str = "\u{f04b}";
+pub const _NF_FA_COG: &str = "\u{f013}";
+pub const NF_FA_MOUNT: &str = "\u{f093}";
 
 /// Helper to get image icon source for a file category and extension using the active theme
 pub fn get_item_icon_source(theme_name: &str, category: &str, extension: &str) -> ImageSource {

@@ -6,6 +6,8 @@ pub mod file_list;
 pub mod preview;
 pub mod status_bar;
 pub mod dialogs;
+pub mod dashboard;
+pub mod zendrop;
 
 pub use title_bar::*;
 pub use navigation::*;
@@ -14,3 +16,5 @@ pub use file_list::*;
 pub use preview::*;
 pub use status_bar::*;
 pub use dialogs::*;
+pub use dashboard::*;
+pub use zendrop::*;
