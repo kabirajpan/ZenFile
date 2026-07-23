@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.zenthra.ZenFile</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>ZenFile</name>
+  <summary>High-performance Rust file manager and local network sharing tool using ZenDrop</summary>
+
+  <description>
+    <p>
+      ZenFile is a premium, state-of-the-art file manager built with Rust and the Zenthra GUI toolkit. It features a stunning glassmorphism design with sleek animations, sidebar widgets (drive usage, CPU/RAM monitoring), and comprehensive sorting/filtering options.
+    </p>
+    <p>
+      Additionally, ZenFile integrates ZenDrop, a secure local P2P sharing protocol designed to discover and transfer files to and from mobile devices and other systems on the local network instantly without configurations.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.zenthra.ZenFile.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main browser view with the dashboard metrics and ZenDrop sharing side-panel</caption>
+      <image>https://raw.githubusercontent.com/kabirajpan/zenthra-v2/main/assets/zenfile_glassmorphis.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/kabirajpan/zenthra-v2</url>
+  <url type="bugtracker">https://github.com/kabirajpan/zenthra-v2/issues</url>
+
+  <releases>
+    <release version="0.2.0" date="2026-07-22"/>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>

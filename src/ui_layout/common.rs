@@ -136,8 +136,12 @@ pub fn open_file(path: &Path) {
     }
     #[cfg(target_os = "linux")]
     {
-        let _ = std::process::Command::new("xdg-open")
+        let _ = std::process::Command::new("setsid")
+            .arg("xdg-open")
             .arg(path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .spawn();
     }
 }

@@ -1,0 +1,3279 @@
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
+use crate::theme::{ThemeMode, ThemeColors};
+
+#[derive(Debug, Clone)]
+pub struct DeviceDrive {
+    pub name: String,
+    pub path: PathBuf,
+    pub is_mounted: bool,
+    pub device_node: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct DeviceDrive {
+    pub name: String,
+    pub path: PathBuf,
+    pub is_mounted: bool,
+    pub device_node: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ViewMode {
+    List,
+    Medium,
+    Large,
+    ExtraLarge,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SortBy {
+    Name,
+    Size,
+    Type,
+    DateModified,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SortOrder {
+    Ascending,
+    Descending,
+}
+
+#[derive(Clone, Debug)]
+pub struct FileItem {
+    pub name: String,
+    pub path: PathBuf,
+    pub is_dir: bool,
+    pub size: u64,
+    pub modified: Option<SystemTime>,
+    pub category: String,  // e.g. "image", "text", "archive", "document", "executable", "other", "folder"
+    pub display_type: String, // e.g. "Folder", "Image File", "Text Document"
+    pub extension: String, // lowercase extension, e.g. "rs"
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActiveScreen {
+    Browser,
+    Dashboard,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ZendropSendMode {
+    Files,
+    Clipboard,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DashboardSelection {
+    None,
+    Drive(std::path::PathBuf),
+    Cpu,
+    Ram,
+    Directory(std::path::PathBuf),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ZendropSendMode {
+    Files,
+    Clipboard,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DashboardSelection {
+    None,
+    Drive(std::path::PathBuf),
+    Cpu,
+    Ram,
+    Directory(std::path::PathBuf),
+}
+
+pub struct FileManagerState {
+    pub active_screen: ActiveScreen,
+    pub current_dir: PathBuf,
+    pub items: Vec<FileItem>,
+    pub selected_idx: Option<usize>,
+    pub history: Vec<PathBuf>,
+    pub history_idx: usize,
+    pub search_query: String,
+    pub theme: ThemeMode,
+    pub accent_color: String,
+    pub highlight_color: String,
+    pub glassmorphism_glow1_color: String,
+    pub glassmorphism_glow2_color: String,
+    pub glassmorphism_glow1_color: String,
+    pub glassmorphism_glow2_color: String,
+    pub show_about: bool,
+    pub text_preview: Option<String>,
+    pub about_x: f32,
+    pub about_y: f32,
+    pub last_click_time: Option<std::time::Instant>,
+    pub last_clicked_idx: Option<usize>,
+    pub renaming_item: Option<PathBuf>,
+    pub rename_buffer: String,
+    pub delete_confirm: Option<PathBuf>,
+    pub sidebar_visible: bool,
+    pub clipboard: Option<(Vec<PathBuf>, bool)>, // (Paths, is_cut)
+    pub view_mode: ViewMode,
+    pub sort_by: SortBy,
+    pub sort_order: SortOrder,
+    pub details_visible: bool,
+    pub icon_theme: String,
+    pub context_menu_pos: Option<(f32, f32)>,
+    pub context_menu_target: Option<usize>,
+    pub info_window_target: Option<usize>,
+    pub info_window_pos: [f32; 2],
+    pub info_window_open: bool,
+    pub file_tags: std::collections::HashMap<PathBuf, String>,
+    pub folder_color: String,
+    pub flat_folders: bool,
+    pub sidebar_width: f32,
+    pub details_width: f32,
+    pub active_resize_sidebar: bool,
+    pub active_resize_details: bool,
+    pub selected_paths: std::collections::HashSet<PathBuf>,
+    pub select_anchor: Option<usize>,
+    pub ctrl_pressed: bool,
+    pub shift_pressed: bool,
+    pub alt_pressed: bool,
+    pub super_pressed: bool,
+    pub alt_pressed: bool,
+    pub super_pressed: bool,
+    pub dragging_item: Option<PathBuf>,
+    pub drag_pressed_item: Option<PathBuf>,
+    pub drag_start_pos: Option<(f32, f32)>,
+    pub drag_item_offset: Option<(f32, f32)>,
+    pub drag_select_start: Option<(f32, f32)>,
+    pub drag_select_current: Option<(f32, f32)>,
+    pub item_rects: Vec<(PathBuf, f32, f32, f32, f32)>, // (path, x, y, w, h) screen rects
+    pub deferred_click_idx: Option<usize>,
+    pub detected_drives: std::sync::Arc<std::sync::Mutex<Vec<DeviceDrive>>>,
+    pub is_detecting_drives: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub last_drive_detect_time: std::time::Instant,
+    pub dashboard_selection: DashboardSelection,
+    // ZenDrop
+    pub zendrop_open: bool,
+    pub zendrop_devices: Vec<ZendropDevice>,
+    pub last_zendrop_scan: Option<std::time::Instant>,
+    pub zendrop_btn_pos: Option<(f32, f32)>,
+    pub zendrop_network_name: String,
+    pub zendrop_networks: Vec<WifiNetwork>,
+    // Dialog / Interaction states
+    pub wifi_connect_ssid: Option<String>,
+    pub wifi_connect_password: String,
+    pub wifi_connect_error: Option<String>,
+    pub wifi_connecting: bool,
+    pub zendrop_send_target: Option<ZendropDevice>,
+    pub zendrop_send_progress: f32,
+    pub zendrop_send_status: String,
+    pub wifi_connection_result: std::sync::Arc<std::sync::Mutex<Option<Result<String, String>>>>,
+    pub zendrop_progress: std::sync::Arc<std::sync::atomic::AtomicU32>,
+    pub zendrop_error: Option<String>,
+    pub zendrop_show_devices: bool,
+    pub zendrop_status_msg: std::sync::Arc<std::sync::Mutex<Option<String>>>,
+    pub zendrop_send_mode: ZendropSendMode,
+    
+    // Real Pairing States
+    pub zendrop_paired: Vec<(String, String, String)>, // Name, IP, Token
+    pub zendrop_pair_request: std::sync::Arc<std::sync::Mutex<Option<(String, String)>>>,
+    pub zendrop_pair_result: std::sync::Arc<std::sync::atomic::AtomicI32>,
+    pub zendrop_pairing_active: bool,
+    pub zendrop_pair_ip_input: String,
+    pub zendrop_scanned: std::sync::Arc<std::sync::Mutex<Vec<(String, String, std::time::Instant)>>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ZendropDevice {
+    pub ip: String,
+    pub mac: String,
+    pub hostname: String,
+    pub iface: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct WifiNetwork {
+    pub ssid: String,
+    pub signal: u8,
+    pub security: String,
+    pub active: bool,
+}
+
+struct LsblkDevice {
+    name: String,
+    fstype: String,
+    label: String,
+    parttype: String,
+    mountpoint: String,
+    size: String,
+    _rm: String,
+}
+
+fn parse_lsblk_line(line: &str) -> Option<LsblkDevice> {
+    let mut name = String::new();
+    let mut fstype = String::new();
+    let mut label = String::new();
+    let mut parttype = String::new();
+    let mut mountpoint = String::new();
+    let mut size = String::new();
+    let mut _rm = String::new();
+
+    let chars: Vec<char> = line.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        while i < chars.len() && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= chars.len() {
+            break;
+        }
+        
+        let mut key = String::new();
+        while i < chars.len() && chars[i] != '=' {
+            key.push(chars[i]);
+            i += 1;
+        }
+        if i >= chars.len() || chars[i] != '=' {
+            break;
+        }
+        i += 1; // skip '='
+
+        if i >= chars.len() || chars[i] != '"' {
+            break;
+        }
+        i += 1; // skip '"'
+        
+        let mut val = String::new();
+        while i < chars.len() && chars[i] != '"' {
+    pub fn disconnect_from_wifi(&mut self, ssid: String) {
+        self.wifi_connecting = true;
+        self.wifi_connect_error = None;
+        
+        let ssid_clone = ssid.clone();
+        let result_arc = self.wifi_connection_result.clone();
+        
+        std::thread::spawn(move || {
+            let mut cmd = std::process::Command::new("nmcli");
+            cmd.args(&["connection", "down", "id", &ssid_clone]);
+            
+            match cmd.output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        *result_arc.lock().unwrap() = Some(Ok(String::new()));
+                    } else {
+                        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                        let err = if err.is_empty() {
+                            String::from_utf8_lossy(&output.stdout).trim().to_string()
+                        } else {
+                            err
+                        };
+                        *result_arc.lock().unwrap() = Some(Err(if err.is_empty() { "Disconnect failed".to_string() } else { err }));
+                    }
+                }
+                Err(e) => {
+                    *result_arc.lock().unwrap() = Some(Err(e.to_string()));
+                }
+            }
+        });
+    }            val.push(chars[i]);
+            i += 1;
+        }
+        if i < chars.len() && chars[i] == '"' {
+            i += 1; // skip '"'
+        }
+        
+        match key.trim() {
+            "NAME" => name = val,
+            "FSTYPE" => fstype = val,
+            "LABEL" => label = val,
+            "PARTTYPE" => parttype = val,
+            "MOUNTPOINT" => mountpoint = val,
+            "SIZE" => size = val,
+            "RM" => _rm = val,
+            _ => {}
+        }
+    }
+
+    if name.is_empty() {
+        None
+    } else {
+        Some(LsblkDevice { name, fstype, label, parttype, mountpoint, size, _rm })
+    }
+}
+
+struct LsblkDevice {
+    name: String,
+    fstype: String,
+    label: String,
+    parttype: String,
+    mountpoint: String,
+    size: String,
+    _rm: String,
+}
+
+fn parse_lsblk_line(line: &str) -> Option<LsblkDevice> {
+    let mut name = String::new();
+    let mut fstype = String::new();
+    let mut label = String::new();
+    let mut parttype = String::new();
+    let mut mountpoint = String::new();
+    let mut size = String::new();
+    let mut _rm = String::new();
+
+    let chars: Vec<char> = line.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        while i < chars.len() && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= chars.len() {
+            break;
+        }
+        
+        let mut key = String::new();
+        while i < chars.len() && chars[i] != '=' {
+            key.push(chars[i]);
+            i += 1;
+        }
+        if i >= chars.len() || chars[i] != '=' {
+            break;
+        }
+        i += 1; // skip '='
+
+        if i >= chars.len() || chars[i] != '"' {
+            break;
+        }
+        i += 1; // skip '"'
+        
+        let mut val = String::new();
+        while i < chars.len() && chars[i] != '"' {
+            val.push(chars[i]);
+            i += 1;
+        }
+        if i < chars.len() && chars[i] == '"' {
+            i += 1; // skip '"'
+        }
+        
+        match key.trim() {
+            "NAME" => name = val,
+            "FSTYPE" => fstype = val,
+            "LABEL" => label = val,
+            "PARTTYPE" => parttype = val,
+            "MOUNTPOINT" => mountpoint = val,
+            "SIZE" => size = val,
+            "RM" => _rm = val,
+            _ => {}
+        }
+    }
+
+    if name.is_empty() {
+        None
+    } else {
+        Some(LsblkDevice { name, fstype, label, parttype, mountpoint, size, _rm })
+    }
+}
+
+impl FileManagerState {
+    pub fn colors(&self) -> ThemeColors {
+        ThemeColors::resolve(self.theme, &self.accent_color, &self.highlight_color)
+    }
+
+    pub fn refresh_zendrop(&mut self) {
+        if self.zendrop_scanning.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        self.zendrop_scanning.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.load_paired_devices();
+
+        let scan_results_arc = self.zendrop_scan_results.clone();
+        let redraw_arc = self.pending_refresh.clone();
+
+        std::thread::spawn(move || {
+            let devices = scan_zendrop_devices();
+            let networks = scan_wifi_networks();
+            let name = query_network_name();
+
+            *scan_results_arc.lock().unwrap() = Some((devices, networks, name));
+            redraw_arc.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+        self.last_zendrop_scan = Some(std::time::Instant::now());
+    }
+
+    pub fn forget_paired_device(&mut self, ip: String) {
+        self.zendrop_paired.retain(|(_, paired_ip, _)| paired_ip != &ip);
+        self.save_paired_devices();
+    }
+
+    pub fn connect_to_wifi(&mut self, ssid: String, password: Option<String>) {
+        self.wifi_connecting = true;
+        self.wifi_connect_error = None;
+        
+        let ssid_clone = ssid.clone();
+        let pass_clone = password;
+        let result_arc = self.wifi_connection_result.clone();
+        
+        std::thread::spawn(move || {
+            let mut cmd = std::process::Command::new("nmcli");
+            cmd.args(&["dev", "wifi", "connect", &ssid_clone]);
+            if let Some(ref pass) = pass_clone {
+                if !pass.is_empty() {
+                    cmd.args(&["password", pass]);
+                }
+            }
+            
+            match cmd.output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        *result_arc.lock().unwrap() = Some(Ok(ssid_clone));
+                    } else {
+                        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                        let err = if err.is_empty() {
+                            String::from_utf8_lossy(&output.stdout).trim().to_string()
+                        } else {
+                            err
+                        };
+                        *result_arc.lock().unwrap() = Some(Err(if err.is_empty() { "Connection failed".to_string() } else { err }));
+                    }
+                }
+                Err(e) => {
+                    *result_arc.lock().unwrap() = Some(Err(e.to_string()));
+                }
+            }
+        });
+    }
+
+    pub fn start_zendrop_send(&mut self, device: ZendropDevice) {
+        // Open the transfers panel (browser-style) instead of a modal
+        self.zendrop_open = true;
+
+        // Collect files iteratively (avoid stack overflow on large folder trees)
+        let mut files_to_send: Vec<std::path::PathBuf> = Vec::new();
+        let is_clipboard = self.zendrop_send_mode == ZendropSendMode::Clipboard;
+        if is_clipboard {
+            if let Some(clip_text) = read_from_clipboard() {
+                let temp_file = std::env::temp_dir().join("Clipboard_Content.txt");
+                if std::fs::write(&temp_file, clip_text).is_ok() {
+                    files_to_send.push(temp_file);
+                }
+            }
+            if files_to_send.is_empty() {
+                self.zendrop_send_status = "Clipboard is empty or could not be read".to_string();
+                return;
+            }
+        } else if self.selected_paths.is_empty() {
+            files_to_send.push(self.current_dir.clone());
+        } else {
+            files_to_send = self.selected_paths.iter().cloned().collect();
+        }
+
+        // Expand into flat file list iteratively
+        let mut flat_files: Vec<(String, std::path::PathBuf)> = Vec::new();
+        for root in &files_to_send {
+            let base = root.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| root.clone());
+            let mut stack = vec![root.clone()];
+            while let Some(current) = stack.pop() {
+                if current.is_file() {
+                    let rel = current.strip_prefix(&base)
+                        .unwrap_or(&current)
+                        .to_string_lossy()
+                        .into_owned();
+                    flat_files.push((rel, current));
+                } else if current.is_dir() {
+                    if let Ok(entries) = std::fs::read_dir(&current) {
+                        for entry in entries.flatten() {
+                            stack.push(entry.path());
+                        }
+                    }
+                }
+            }
+        }
+
+        if flat_files.is_empty() {
+            return;
+        }
+
+        let ip = device.ip.clone();
+        let progress_arc = self.zendrop_progress.clone();
+        progress_arc.store(0, std::sync::atomic::Ordering::SeqCst);
+        let status_msg_clone = self.zendrop_status_msg.clone();
+
+        // Total bytes for overall progress pill
+        let mut total_bytes = 0_u64;
+        for (_, path) in &flat_files {
+            total_bytes += std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+        }
+
+        // Create a TransferEntry per file for the browser panel
+        let entries: Vec<TransferEntry> = flat_files.iter().map(|(rel, path)| {
+            let filename = std::path::Path::new(rel)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| rel.clone());
+            TransferEntry {
+                filename,
+                total_bytes: std::fs::metadata(path).map(|m| m.len()).unwrap_or(0),
+                sent_bytes: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                status: std::sync::Arc::new(std::sync::Mutex::new(TransferStatus::Sending)),
+                speed_mbps: std::sync::Arc::new(std::sync::Mutex::new(0.0)),
+                started_at: std::time::Instant::now(),
+                cancel_flag: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            }
+        }).collect();
+
+        // Keep Arc clones to track progress from the thread
+        let entry_refs: Vec<(
+            std::sync::Arc<std::sync::atomic::AtomicU64>,
+            std::sync::Arc<std::sync::Mutex<TransferStatus>>,
+            std::sync::Arc<std::sync::Mutex<f32>>,
+            std::sync::Arc<std::sync::atomic::AtomicBool>, // cancel
+        )> = entries.iter().map(|e| (
+            e.sent_bytes.clone(),
+            e.status.clone(),
+            e.speed_mbps.clone(),
+            e.cancel_flag.clone(),
+        )).collect();
+
+        // Push entries into the history list (most recent first)
+        let mut new_transfers = entries;
+        new_transfers.extend(self.zendrop_transfers.drain(..));
+        // Keep max 20 entries
+        new_transfers.truncate(20);
+        self.zendrop_transfers = new_transfers;
+
+        std::thread::spawn(move || {
+            use std::io::{Write, BufWriter};
+            use std::net::TcpStream;
+
+            let mut sent_bytes_total = 0_u64;
+
+            // Single persistent connection for all files
+            let stream = match TcpStream::connect((ip.as_str(), 8888)) {
+                Ok(s) => s,
+                Err(e) => {
+                    for (_, status_arc, _, _) in &entry_refs {
+                        *status_arc.lock().unwrap() = TransferStatus::Failed;
+                    }
+                    *status_msg_clone.lock().unwrap() = Some(format!("Connection failed: {}", e));
+                    progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                    return;
+                }
+            };
+            let _ = stream.set_nodelay(true);
+            let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(60)));
+
+            // Use a BufWriter with 256KB buffer — flushes large chunks at a time
+            let mut writer = BufWriter::with_capacity(256 * 1024, stream);
+
+            let mut aborted = false;
+
+            for (idx, (rel_name, path)) in flat_files.iter().enumerate() {
+                let (sent_arc, status_arc, speed_arc, cancel_arc) = &entry_refs[idx];
+                let file_len = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+
+                if cancel_arc.load(std::sync::atomic::Ordering::SeqCst) {
+                    *status_arc.lock().unwrap() = TransferStatus::Failed;
+                    aborted = true;
+                    break;
+                }
+
+                *status_msg_clone.lock().unwrap() = Some(format!("Sending ({}/{}): {}", idx + 1, flat_files.len(), rel_name));
+
+                let mut file = match std::fs::File::open(path) {
+                    Ok(f) => f,
+                    Err(_) => {
+                        *status_arc.lock().unwrap() = TransferStatus::Failed;
+                        continue;
+                    }
+                };
+
+                let name_bytes = rel_name.as_bytes();
+                if name_bytes.len() > 65535 { continue; }
+                let name_len = name_bytes.len() as u16;
+
+                // Frame header in one write: [name_len u16 | name | file_len u64 | compressed u8]
+                let mut header = Vec::with_capacity(2 + name_bytes.len() + 8 + 1);
+                header.extend_from_slice(&name_len.to_be_bytes());
+                header.extend_from_slice(name_bytes);
+                header.extend_from_slice(&file_len.to_be_bytes());
+                header.push(0x00);
+                if writer.write_all(&header).is_err() {
+                    *status_arc.lock().unwrap() = TransferStatus::Failed;
+                    aborted = true; break;
+                }
+
+                let mut buffer = vec![0u8; 256 * 1024];
+                let mut file_sent = 0_u64;
+                let file_start = std::time::Instant::now();
+
+                use std::io::Read;
+                while file_sent < file_len {
+                    if cancel_arc.load(std::sync::atomic::Ordering::Relaxed) {
+                        *status_arc.lock().unwrap() = TransferStatus::Failed;
+                        aborted = true; break;
+                    }
+                    let n = match file.read(&mut buffer) {
+                        Ok(0) => break,
+                        Ok(n) => n,
+                        Err(_) => { aborted = true; break; },
+                    };
+                    if writer.write_all(&buffer[..n]).is_err() { aborted = true; break; }
+                    file_sent += n as u64;
+                    sent_bytes_total += n as u64;
+                    sent_arc.store(file_sent, std::sync::atomic::Ordering::Relaxed);
+                    if total_bytes > 0 {
+                        let pct = ((sent_bytes_total * 100) / total_bytes).min(99) as u32;
+                        progress_arc.store(pct, std::sync::atomic::Ordering::SeqCst);
+                    }
+                }
+
+                if !aborted {
+                    if writer.flush().is_err() {
+                        aborted = true;
+                    }
+                }
+
+                if aborted {
+                    *status_arc.lock().unwrap() = TransferStatus::Failed;
+                    break;
+                }
+
+                let elapsed = file_start.elapsed().as_secs_f32().max(0.001);
+                let mb = file_sent as f32 / 1_048_576.0;
+                *speed_arc.lock().unwrap() = mb / elapsed;
+                sent_arc.store(file_len, std::sync::atomic::Ordering::Relaxed);
+                *status_arc.lock().unwrap() = TransferStatus::Done;
+            }
+
+            // Send EOF sentinel: name_len = 0x0000
+            if !aborted {
+                let _ = writer.write_all(&[0x00, 0x00]);
+                let _ = writer.flush();
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                *status_msg_clone.lock().unwrap() = Some("Transfer complete!".to_string());
+            } else {
+                let _ = writer.flush();
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                if *status_msg_clone.lock().unwrap() == None {
+                    *status_msg_clone.lock().unwrap() = Some("Transfer aborted".to_string());
+                }
+            }
+        });
+    }
+
+
+
+    pub fn detect_drives(&self) -> Vec<DeviceDrive> {
+        let mut drives = Vec::new();
+        
+        #[cfg(target_os = "windows")]
+        {
+            for letter in b'A'..=b'Z' {
+                let drive_path = PathBuf::from(format!("{}:\\", letter as char));
+                if drive_path.exists() {
+                    let name = if letter as char == 'C' {
+                        "System Disk (C:)".to_string()
+                    } else {
+                        format!("Local Disk ({}:)", letter as char)
+                    };
+                    drives.push(DeviceDrive { name, path: drive_path });
+                }
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            drives.push(DeviceDrive { name: "Macintosh HD".to_string(), path: PathBuf::from("/") });
+            if let Ok(entries) = std::fs::read_dir("/Volumes") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Volume".to_string());
+                        drives.push(DeviceDrive { name, path });
+                    }
+                }
+            }
+        }
+
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        {
+            drives.push(DeviceDrive { name: "System Disk".to_string(), path: PathBuf::from("/") });
+            
+            // Scan /media/
+            if let Ok(entries) = std::fs::read_dir("/media") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Ok(mounts) = std::fs::read_dir(&path) {
+                            for mount in mounts.flatten() {
+                                let mount_path = mount.path();
+                                let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                drives.push(DeviceDrive { name, path: mount_path });
+                            }
+                        }
+                    }
+                }
+            }
+            // Scan /run/media/
+            if let Ok(entries) = std::fs::read_dir("/run/media") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Ok(mounts) = std::fs::read_dir(&path) {
+                            for mount in mounts.flatten() {
+                                let mount_path = mount.path();
+                                let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                drives.push(DeviceDrive { name, path: mount_path });
+                            }
+                        }
+                    }
+                }
+            }
+            // Scan /mnt/
+            if let Ok(entries) = std::fs::read_dir("/mnt") {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Mount".to_string());
+                        drives.push(DeviceDrive { name, path });
+                    }
+                }
+            }
+        }
+
+        drives
+    }
+
+    pub fn refresh_zendrop(&mut self) {
+        self.zendrop_devices = scan_zendrop_devices();
+        self.zendrop_networks = scan_wifi_networks();
+        self.zendrop_network_name = query_network_name();
+        self.last_zendrop_scan = Some(std::time::Instant::now());
+    }
+    pub fn disconnect_from_wifi(&mut self, ssid: String) {
+        self.wifi_connecting = true;
+        self.wifi_connect_error = None;
+        
+        let ssid_clone = ssid.clone();
+        let result_arc = self.wifi_connection_result.clone();
+        
+        std::thread::spawn(move || {
+            let mut cmd = std::process::Command::new("nmcli");
+            cmd.args(&["connection", "down", "id", &ssid_clone]);
+            
+            match cmd.output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        *result_arc.lock().unwrap() = Some(Ok(String::new()));
+                    } else {
+                        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                        let err = if err.is_empty() {
+                            String::from_utf8_lossy(&output.stdout).trim().to_string()
+                        } else {
+                            err
+                        };
+                        *result_arc.lock().unwrap() = Some(Err(if err.is_empty() { "Disconnect failed".to_string() } else { err }));
+                    }
+                }
+                Err(e) => {
+                    *result_arc.lock().unwrap() = Some(Err(e.to_string()));
+                }
+            }
+        });
+    }
+    pub fn connect_to_wifi(&mut self, ssid: String, password: Option<String>) {
+        self.wifi_connecting = true;
+        self.wifi_connect_error = None;
+        
+        let ssid_clone = ssid.clone();
+        let pass_clone = password;
+        let result_arc = self.wifi_connection_result.clone();
+        
+        std::thread::spawn(move || {
+            let mut cmd = std::process::Command::new("nmcli");
+            cmd.args(&["dev", "wifi", "connect", &ssid_clone]);
+            if let Some(ref pass) = pass_clone {
+                if !pass.is_empty() {
+                    cmd.args(&["password", pass]);
+                }
+            }
+            
+            match cmd.output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        *result_arc.lock().unwrap() = Some(Ok(ssid_clone));
+                    } else {
+                        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                        let err = if err.is_empty() {
+                            String::from_utf8_lossy(&output.stdout).trim().to_string()
+                        } else {
+                            err
+                        };
+                        *result_arc.lock().unwrap() = Some(Err(if err.is_empty() { "Connection failed".to_string() } else { err }));
+                    }
+                }
+                Err(e) => {
+                    *result_arc.lock().unwrap() = Some(Err(e.to_string()));
+                }
+            }
+        });
+    }
+
+    pub fn start_zendrop_send(&mut self, device: ZendropDevice) {
+        self.zendrop_send_target = Some(device.clone());
+        self.zendrop_send_progress = 0.0;
+        self.zendrop_send_status = "Connecting to device...".to_string();
+
+        let progress_arc = self.zendrop_progress.clone();
+        progress_arc.store(0, std::sync::atomic::Ordering::SeqCst);
+
+        // Get files to send
+        let mut files_to_send = Vec::new();
+        let is_clipboard = self.zendrop_send_mode == ZendropSendMode::Clipboard;
+        if is_clipboard {
+            if let Some(clip_text) = read_from_clipboard() {
+                let temp_file = std::env::temp_dir().join("Clipboard_Content.txt");
+                if std::fs::write(&temp_file, clip_text).is_ok() {
+                    files_to_send.push(temp_file);
+                }
+            }
+            if files_to_send.is_empty() {
+                self.zendrop_send_status = "Clipboard is empty or could not be read".to_string();
+                return;
+            }
+        } else {
+            if self.selected_paths.is_empty() {
+                files_to_send.push(self.current_dir.clone());
+            } else {
+                files_to_send = self.selected_paths.iter().cloned().collect();
+            }
+        }
+
+        let ip = device.ip.clone();
+        let status_msg_clone = self.zendrop_status_msg.clone();
+        let paired_list_clone = self.zendrop_paired.clone();
+
+        std::thread::spawn(move || {
+            use std::io::{Write, Read};
+            use std::net::TcpStream;
+
+            // Find pairing token
+            let token = paired_list_clone.iter()
+                .find(|(_, pip, _)| pip == &ip)
+                .map(|(_, _, tok)| tok.clone())
+                .unwrap_or_default();
+
+            // Collect files recursively
+            let mut files = Vec::new();
+            for path in files_to_send {
+                let parent = path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| path.clone());
+                let _ = collect_files_recursive(path, &parent, &mut files);
+            }
+
+            if files.is_empty() {
+                *status_msg_clone.lock().unwrap() = Some("No files found to send".to_string());
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                return;
+            }
+
+            // Calculate total size
+            let mut total_bytes = 0_u64;
+            for (_, path) in &files {
+                if let Ok(meta) = std::fs::metadata(path) {
+                    total_bytes += meta.len();
+                }
+            }
+
+            let mut sent_bytes = 0_u64;
+
+            // Connect to target peer
+            let mut stream = match TcpStream::connect((ip.as_str(), 8888)) {
+                Ok(s) => s,
+                Err(e) => {
+                    *status_msg_clone.lock().unwrap() = Some(format!("Connection failed: {}", e));
+                    progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                    return;
+                }
+            };
+
+            let _ = stream.set_nodelay(true);
+            let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(30)));
+            let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(10)));
+
+            // 1. Send Validation Header: [token_len (u16) | token]
+            let token_bytes = token.as_bytes();
+            let token_len = token_bytes.len() as u16;
+            if stream.write_all(&token_len.to_be_bytes()).is_err() || stream.write_all(token_bytes).is_err() || stream.flush().is_err() {
+                *status_msg_clone.lock().unwrap() = Some("Failed to send validation header".to_string());
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                return;
+            }
+
+            // 2. Read 1-byte Validation Response
+            let mut val_resp = [0u8; 1];
+            if stream.read_exact(&mut val_resp).is_err() {
+                *status_msg_clone.lock().unwrap() = Some("No response from peer".to_string());
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                return;
+            }
+
+            if val_resp[0] == 0x00 {
+                // Connection rejected: Unpaired by peer
+                println!("Desktop: Connection rejected by peer {} (unpaired)", ip);
+                *status_msg_clone.lock().unwrap() = Some(format!("Connection rejected: Unpaired by peer:{}", ip));
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                return;
+            }
+
+            // Send files loop
+            let mut aborted = false;
+            for (idx, (rel_name, path)) in files.iter().enumerate() {
+                *status_msg_clone.lock().unwrap() = Some(format!("Sending ({}/{}): {}", idx + 1, files.len(), rel_name));
+
+                let mut file = match std::fs::File::open(path) {
+                    Ok(f) => f,
+                    Err(_) => continue,
+                };
+
+                let file_len = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+
+                let name_bytes = rel_name.as_bytes();
+                if name_bytes.len() > 65535 {
+                    continue; // skip files exceeding name length limit
+                }
+                let name_len = name_bytes.len() as u16;
+
+                // Frame header: [name_len (u16) | name | file_len (u64) | compressed (u8)]
+                let mut header = Vec::with_capacity(2 + name_bytes.len() + 8 + 1);
+                header.extend_from_slice(&name_len.to_be_bytes());
+                header.extend_from_slice(name_bytes);
+                header.extend_from_slice(&file_len.to_be_bytes());
+                header.push(0x00); // compression flag = false
+
+                if stream.write_all(&header).is_err() {
+                    aborted = true;
+                    break;
+                }
+
+                // Write content
+                let mut buffer = vec![0; 256 * 1024]; // 256KB buffer for maximum speed
+                let mut file_sent = 0_u64;
+                while file_sent < file_len {
+                    let read_len = match file.read(&mut buffer) {
+                        Ok(0) => break,
+                        Ok(n) => n,
+                        Err(_) => { aborted = true; break; }
+                    };
+                    if stream.write_all(&buffer[..read_len]).is_err() {
+                        aborted = true;
+                        break;
+                    }
+                    file_sent += read_len as u64;
+                    sent_bytes += read_len as u64;
+
+                    // Update progress
+                    let pct = if total_bytes > 0 {
+                        ((sent_bytes as f64 / total_bytes as f64) * 100.0) as u32
+                    } else {
+                        100
+                    };
+                    progress_arc.store(pct.min(99), std::sync::atomic::Ordering::SeqCst);
+                }
+
+                if aborted { break; }
+                
+                // Flush stream after file is fully sent
+                let _ = stream.flush();
+            }
+
+            if !aborted {
+                // Send EOF sentinel: name_len = 0x0000
+                let _ = stream.write_all(&[0x00, 0x00]);
+                let _ = stream.flush();
+                progress_arc.store(100, std::sync::atomic::Ordering::SeqCst);
+                *status_msg_clone.lock().unwrap() = Some("Transfer Complete!".to_string());
+            } else {
+                *status_msg_clone.lock().unwrap() = Some("Transfer failed or aborted".to_string());
+            }
+        });
+    }
+
+    pub fn detect_drives(&mut self) -> Vec<DeviceDrive> {
+        if self.last_drive_detect_time.elapsed().as_secs() >= 3 {
+            self.trigger_drive_refresh();
+            self.last_drive_detect_time = std::time::Instant::now();
+        }
+        
+        self.detected_drives.lock().unwrap().clone()
+    }
+
+    pub fn trigger_drive_refresh(&self) {
+        if self.is_detecting_drives.swap(true, std::sync::atomic::Ordering::SeqCst) == false {
+            let drives_arc = self.detected_drives.clone();
+            let is_detecting_arc = self.is_detecting_drives.clone();
+            
+            std::thread::spawn(move || {
+                let mut drives = Vec::new();
+                
+                #[cfg(target_os = "windows")]
+                {
+                    for letter in b'A'..=b'Z' {
+                        let drive_path = PathBuf::from(format!("{}:\\", letter as char));
+                        if drive_path.exists() {
+                            let name = if letter as char == 'C' {
+                                "System Disk (C:)".to_string()
+                            } else {
+                                format!("Local Disk ({}:)", letter as char)
+                            };
+                            drives.push(DeviceDrive {
+                                name,
+                                path: drive_path,
+                                is_mounted: true,
+                                device_node: "".to_string(),
+                            });
+                        }
+                    }
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    drives.push(DeviceDrive {
+                        name: "Macintosh HD".to_string(),
+                        path: PathBuf::from("/"),
+                        is_mounted: true,
+                        device_node: "".to_string(),
+                    });
+                    if let Ok(entries) = std::fs::read_dir("/Volumes") {
+                        for entry in entries.flatten() {
+                            let path = entry.path();
+                            if path.is_dir() {
+                                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Volume".to_string());
+                                drives.push(DeviceDrive {
+                                    name,
+                                    path,
+                                    is_mounted: true,
+                                    device_node: "".to_string(),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+                {
+                    drives.push(DeviceDrive {
+                        name: "System Disk".to_string(),
+                        path: PathBuf::from("/"),
+                        is_mounted: true,
+                        device_node: "".to_string(),
+                    });
+                    
+                    let output = std::process::Command::new("lsblk")
+                        .args(&["-P", "-o", "NAME,FSTYPE,LABEL,PARTTYPE,MOUNTPOINT,SIZE,RM"])
+                        .output();
+                    if let Ok(out) = output {
+                        let stdout = String::from_utf8_lossy(&out.stdout);
+                        for line in stdout.lines() {
+                            if let Some(dev) = parse_lsblk_line(line) {
+                                if dev.fstype.is_empty() || dev.fstype == "swap" || dev.fstype == "cryptswap" {
+                                    continue;
+                                }
+                                if dev.parttype == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" {
+                                    continue;
+                                }
+                                if dev.mountpoint == "/" || dev.mountpoint == "/boot/efi" || dev.mountpoint == "/recovery" || dev.mountpoint.starts_with("[SWAP]") {
+                                    continue;
+                                }
+
+                                let dev_path = format!("/dev/{}", dev.name);
+                                let is_mounted = !dev.mountpoint.is_empty();
+                                let path = if is_mounted {
+                                    PathBuf::from(dev.mountpoint)
+                                } else {
+                                    PathBuf::from(&dev_path)
+                                };
+
+                                let label = if !dev.label.is_empty() {
+                                    dev.label
+                                } else {
+                                    format!("Local Disk ({})", dev.name)
+                                };
+
+                                let display_name = format!("{} ({})", label, dev.size);
+
+                                drives.push(DeviceDrive {
+                                    name: display_name,
+                                    path,
+                                    is_mounted,
+                                    device_node: dev_path,
+                                });
+                            }
+                        }
+                    }
+
+                    if drives.len() <= 1 {
+                        if let Ok(entries) = std::fs::read_dir("/media") {
+                            for entry in entries.flatten() {
+                                let path = entry.path();
+                                if path.is_dir() {
+                                    if let Ok(mounts) = std::fs::read_dir(&path) {
+                                        for mount in mounts.flatten() {
+                                            let mount_path = mount.path();
+                                            let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                            drives.push(DeviceDrive {
+                                                name,
+                                                path: mount_path,
+                                                is_mounted: true,
+                                                device_node: "".to_string(),
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if let Ok(entries) = std::fs::read_dir("/run/media") {
+                            for entry in entries.flatten() {
+                                let path = entry.path();
+                                if path.is_dir() {
+                                    if let Ok(mounts) = std::fs::read_dir(&path) {
+                                        for mount in mounts.flatten() {
+                                            let mount_path = mount.path();
+                                            let name = mount_path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "External Drive".to_string());
+                                            drives.push(DeviceDrive {
+                                                name,
+                                                path: mount_path,
+                                                is_mounted: true,
+                                                device_node: "".to_string(),
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Ok(mut guard) = drives_arc.lock() {
+                    *guard = drives;
+                }
+                is_detecting_arc.store(false, std::sync::atomic::Ordering::SeqCst);
+            });
+        }
+    }
+
+    pub fn new() -> Self {
+        // Start in user home directory (or current directory fallback)
+        let initial_dir = dirs::home_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/")));
+        
+        let mut state = Self {
+            active_screen: ActiveScreen::Browser,
+            current_dir: initial_dir.clone(),
+            items: Vec::new(),
+            selected_idx: None,
+            history: vec![initial_dir],
+            history_idx: 0,
+            search_query: String::new(),
+            theme: ThemeMode::Dark,
+            accent_color: "yellow".to_string(),
+            highlight_color: "gray".to_string(),
+            glassmorphism_glow1_color: "purple".to_string(),
+            glassmorphism_glow2_color: "blue".to_string(),
+            show_about: true,
+            text_preview: None,
+            about_x: 390.0,
+            about_y: 150.0,
+            last_click_time: None,
+            last_clicked_idx: None,
+            renaming_item: None,
+            rename_buffer: String::new(),
+            delete_confirm: None,
+            sidebar_visible: true,
+            clipboard: None,
+            view_mode: ViewMode::List,
+            sort_by: SortBy::Name,
+            sort_order: SortOrder::Ascending,
+            details_visible: true,
+            icon_theme: "gruvbox".to_string(),
+            context_menu_pos: None,
+            context_menu_target: None,
+            info_window_target: None,
+            info_window_pos: [300.0, 200.0],
+            info_window_open: false,
+            file_tags: std::collections::HashMap::new(),
+            folder_color: "gray".to_string(),
+            flat_folders: false,
+            sidebar_width: 220.0,
+            details_width: 300.0,
+            active_resize_sidebar: false,
+            active_resize_details: false,
+            selected_paths: std::collections::HashSet::new(),
+            select_anchor: None,
+            ctrl_pressed: false,
+            shift_pressed: false,
+            alt_pressed: false,
+            super_pressed: false,
+            alt_pressed: false,
+            super_pressed: false,
+            dragging_item: None,
+            drag_pressed_item: None,
+            drag_start_pos: None,
+            drag_item_offset: None,
+            drag_select_start: None,
+            drag_select_current: None,
+            item_rects: Vec::new(),
+            deferred_click_idx: None,
+            detected_drives: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+            is_detecting_drives: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            last_drive_detect_time: std::time::Instant::now(),
+            dashboard_selection: DashboardSelection::None,
+            zendrop_open: false,
+            zendrop_devices: Vec::new(),
+            last_zendrop_scan: None,
+            zendrop_btn_pos: None,
+            zendrop_network_name: "Local Network".to_string(),
+            zendrop_networks: Vec::new(),
+            wifi_connect_ssid: None,
+            wifi_connect_password: String::new(),
+            wifi_connect_error: None,
+            wifi_connecting: false,
+            zendrop_send_target: None,
+            zendrop_send_progress: 0.0,
+            zendrop_send_status: String::new(),
+            wifi_connection_result: std::sync::Arc::new(std::sync::Mutex::new(None)),
+            zendrop_progress: std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0)),
+            zendrop_error: None,
+            zendrop_show_devices: false,
+            zendrop_status_msg: std::sync::Arc::new(std::sync::Mutex::new(None)),
+            zendrop_send_mode: ZendropSendMode::Files,
+            zendrop_paired: Vec::new(),
+            zendrop_pair_request: std::sync::Arc::new(std::sync::Mutex::new(None)),
+            zendrop_pair_result: std::sync::Arc::new(std::sync::atomic::AtomicI32::new(0)),
+            zendrop_pairing_active: false,
+            zendrop_pair_ip_input: String::new(),
+            zendrop_scanned: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+            zendrop_scan_results: std::sync::Arc::new(std::sync::Mutex::new(None)),
+            zendrop_scanning: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        };
+
+        // Spawn background TCP listener on port 8888 to receive incoming ZenDrop/file_transfer_app transfers
+        let download_dir = dirs::download_dir()
+            .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_default()))
+            .join("ZenDrop");
+
+        let pending_refresh_clone = state.pending_refresh.clone();
+        let pair_req_clone = state.zendrop_pair_request.clone();
+        let pair_res_clone = state.zendrop_pair_result.clone();
+
+        std::thread::spawn(move || {
+            use std::net::TcpListener;
+            use std::io::Read;
+
+            let listener = match TcpListener::bind("0.0.0.0:8888") {
+                Ok(l) => l,
+                Err(_) => return,
+            };
+
+            for stream in listener.incoming() {
+                let stream = match stream {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+
+                let download_dir = download_dir.clone();
+                let pending_refresh_clone = pending_refresh_clone.clone();
+                let pair_req_clone = pair_req_clone.clone();
+                let pair_res_clone = pair_res_clone.clone();
+
+                std::thread::spawn(move || {
+                    let mut stream_clone = match stream.try_clone() {
+                        Ok(s) => s,
+                        Err(_) => return,
+                    };
+                    let _ = stream.set_nodelay(true);
+                    let mut reader = std::io::BufReader::with_capacity(256 * 1024, stream);
+
+                    // 1. Read first u16 (first_u16)
+                    let mut first_u16_buf = [0u8; 2];
+                    if reader.read_exact(&mut first_u16_buf).is_err() { return; }
+                    let first_u16 = u16::from_be_bytes(first_u16_buf) as usize;
+
+                    if first_u16 == 0xFFFF {
+                        // Pairing Request: [0xFFFF | dev_name_len (u16) | name | ip_len (u16) | ip | token_len (u16) | token]
+                        let mut dev_name_len_buf = [0u8; 2];
+                        if reader.read_exact(&mut dev_name_len_buf).is_err() { return; }
+                        let dev_name_len = u16::from_be_bytes(dev_name_len_buf) as usize;
+
+                        let mut dev_name_buf = vec![0u8; dev_name_len];
+                        if reader.read_exact(&mut dev_name_buf).is_err() { return; }
+                        let requester_name = String::from_utf8_lossy(&dev_name_buf).into_owned();
+
+                        let mut ip_len_buf = [0u8; 2];
+                        if reader.read_exact(&mut ip_len_buf).is_err() { return; }
+                        let ip_len = u16::from_be_bytes(ip_len_buf) as usize;
+
+                        let mut ip_buf = vec![0u8; ip_len];
+                        if reader.read_exact(&mut ip_buf).is_err() { return; }
+                        let requester_ip = String::from_utf8_lossy(&ip_buf).into_owned();
+
+                        let mut token_len_buf = [0u8; 2];
+                        if reader.read_exact(&mut token_len_buf).is_err() { return; }
+                        let token_len = u16::from_be_bytes(token_len_buf) as usize;
+
+                        let mut token_buf = vec![0u8; token_len];
+                        if reader.read_exact(&mut token_buf).is_err() { return; }
+                        let requester_token = String::from_utf8_lossy(&token_buf).into_owned();
+
+                        println!("Desktop: Received Pairing Request from: {} ({}) with token: {}", requester_name, requester_ip, requester_token);
+                        
+                        *pair_req_clone.lock().unwrap() = Some((requester_name.clone(), requester_ip.clone()));
+                        pair_res_clone.store(0, std::sync::atomic::Ordering::SeqCst);
+
+                        let mut choice = 0;
+                        for _ in 0..300 {
+                            choice = pair_res_clone.load(std::sync::atomic::Ordering::SeqCst);
+                            if choice != 0 { break; }
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                        }
+
+                        let response_byte = if choice == 1 { 0x01 } else { 0x00 };
+                        let _ = stream_clone.write_all(&[response_byte]);
+                        let _ = stream_clone.flush();
+
+                        if choice == 1 {
+                            let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                            path.push("zenthra");
+                            let _ = std::fs::create_dir_all(&path);
+                            path.push("paired_devices.txt");
+                            if let Ok(mut file) = std::fs::OpenOptions::new().append(true).create(true).open(path) {
+                                use std::io::Write as _;
+                                let _ = writeln!(file, "{}={}={}", requester_name, requester_ip, requester_token);
+                            }
+                        }
+
+                        *pair_req_clone.lock().unwrap() = None;
+                        return; // End connection after pairing request
+                    }
+
+                    // Otherwise, first_u16 is the token validation length
+                    let token_len = first_u16;
+                    if token_len == 0 || token_len > 128 { return; }
+
+                    let mut token_buf = vec![0u8; token_len];
+                    if reader.read_exact(&mut token_buf).is_err() { return; }
+                    let token = String::from_utf8_lossy(&token_buf).into_owned();
+
+                    // Retrieve sender's IP address from TcpStream
+                    let sender_ip = match stream_clone.peer_addr() {
+                        Ok(addr) => addr.ip().to_string(),
+                        Err(_) => return,
+                    };
+
+                    // Validate signature token in paired_devices.txt
+                    let is_authorized = {
+                        let mut found = false;
+                        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                        path.push("zenthra");
+                        path.push("paired_devices.txt");
+                        if let Ok(content) = std::fs::read_to_string(path) {
+                            for line in content.lines() {
+                                let line = line.trim();
+                                let parts: Vec<&str> = line.split('=').collect();
+                                if parts.len() == 3 && parts[1] == sender_ip && parts[2] == token {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        found
+                    };
+
+                    if !is_authorized {
+                        println!("Desktop: Connection unauthorized from IP: {}", sender_ip);
+                        let _ = stream_clone.write_all(&[0x00]); // 0x00: Validation Failed (Unpaired)
+                        let _ = stream_clone.flush();
+                        return;
+                    }
+
+                    // Write 0x01 back to sender indicating validation success
+                    if stream_clone.write_all(&[0x01]).is_err() || stream_clone.flush().is_err() {
+                        return;
+                    }
+
+                    // Multi-file frame loop on a single connection
+                    loop {
+                        let mut name_len_buf = [0; 2];
+                        if reader.read_exact(&mut name_len_buf).is_err() { break; }
+                        let name_len = u16::from_be_bytes(name_len_buf) as usize;
+
+                        if name_len == 0 { break; }
+
+                        let mut name_buf = vec![0; name_len];
+                        if reader.read_exact(&mut name_buf).is_err() { break; }
+                        let rel_name = String::from_utf8_lossy(&name_buf).into_owned();
+
+                        let mut file_len_buf = [0; 8];
+                        if reader.read_exact(&mut file_len_buf).is_err() { break; }
+                        let file_len = u64::from_be_bytes(file_len_buf);
+
+                        let mut compressed_buf = [0; 1];
+                        if reader.read_exact(&mut compressed_buf).is_err() { break; }
+
+                        let target_path = download_dir.join(&rel_name);
+                        if let Some(parent) = target_path.parent() {
+                            let _ = std::fs::create_dir_all(parent);
+                        }
+
+                        let mut file = match std::fs::File::create(&target_path) {
+                            Ok(f) => f,
+                            Err(_) => break,
+                        };
+
+                        let mut limit = (&mut reader).take(file_len);
+                        if std::io::copy(&mut limit, &mut file).is_err() { break; }
+                        
+                        // Flush the file to disk
+                        let _ = file.flush();
+                    }
+
+                    // Trigger UI refresh after all files received
+                    pending_refresh_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+                });
+            }
+        });
+
+        // Spawn background UDP Discovery Beacon Thread on port 8889
+        let scanned_devices_arc = state.zendrop_scanned.clone();
+        std::thread::spawn(move || {
+            use std::net::UdpSocket;
+            use std::collections::hash_map::DefaultHasher;
+            use std::hash::{Hash, Hasher};
+
+            fn get_desktop_local_ip() -> Option<String> {
+                let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+                socket.connect("8.8.8.8:80").ok()?;
+                let local_addr = socket.local_addr().ok()?;
+                Some(local_addr.ip().to_string())
+            }
+
+            let mut hasher = DefaultHasher::new();
+            std::time::Instant::now().hash(&mut hasher);
+            let my_instance_id = hasher.finish() as u32;
+
+            let socket = match UdpSocket::bind("0.0.0.0:8889") {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+            let _ = socket.set_broadcast(true);
+            let _ = socket.set_nonblocking(true);
+
+            let local_name = std::env::var("USER").unwrap_or_else(|_| "Desktop".to_string()) + "-ZenFile";
+            let beacon_msg = format!("ZenDropBeacon::{}::{}", local_name, my_instance_id);
+
+            let mut buffer = [0u8; 1024];
+            let mut last_broadcast = std::time::Instant::now() - std::time::Duration::from_secs(5);
+
+            loop {
+                let local_ip = get_desktop_local_ip();
+
+                // Periodically clean up stale devices (> 6 seconds)
+                {
+                    if let Ok(mut scanned) = scanned_devices_arc.lock() {
+                        scanned.retain(|(_, _, last_seen)| last_seen.elapsed().as_secs() < 6);
+                    }
+                }
+
+                // Listen for beacons
+                if let Ok((n, addr)) = socket.recv_from(&mut buffer) {
+                    let msg = String::from_utf8_lossy(&buffer[..n]);
+                    if msg.starts_with("ZenDropBeacon::") {
+                        let parts: Vec<&str> = msg.split("::").collect();
+                        if parts.len() == 3 {
+                            let name = parts[1].to_string();
+                            let beacon_inst_id: u32 = parts[2].parse().unwrap_or(0);
+                            let ip = addr.ip().to_string();
+                            
+                            let is_self = beacon_inst_id == my_instance_id;
+
+                            if !is_self {
+                                if let Ok(mut list) = scanned_devices_arc.lock() {
+                                    if let Some(pos) = list.iter().position(|(_, item_ip, _)| item_ip == &ip) {
+                                        list[pos] = (name, ip, std::time::Instant::now());
+                                    } else {
+                                        list.push((name, ip, std::time::Instant::now()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Broadcast beacon
+                if last_broadcast.elapsed().as_secs() >= 2 {
+                    let _ = socket.send_to(beacon_msg.as_bytes(), "255.255.255.255:8889");
+                    
+                    if let Some(ref lip) = local_ip {
+                        let parts: Vec<&str> = lip.split('.').collect();
+                        if parts.len() == 4 {
+                            let sub_broadcast = format!("{}.{}.{}.255", parts[0], parts[1], parts[2]);
+                            let _ = socket.send_to(beacon_msg.as_bytes(), &(sub_broadcast.as_str(), 8889));
+                        }
+                    }
+                    
+                    last_broadcast = std::time::Instant::now();
+                }
+
+                std::thread::sleep(std::time::Duration::from_millis(150));
+            }
+        });
+
+        state.load_paired_devices();
+        state.trigger_drive_refresh();
+        state.load_tags();
+        state.scan_current_dir();
+        state
+    }
+
+    pub fn load_tags(&mut self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        path.push("tags.txt");
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for line in content.lines() {
+                if let Some((p_str, t_str)) = line.split_once('=') {
+                    self.file_tags.insert(PathBuf::from(p_str), t_str.to_string());
+                }
+            }
+        }
+    }
+
+    pub fn save_tags(&self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        let _ = std::fs::create_dir_all(&path);
+        path.push("tags.txt");
+        let mut content = String::new();
+        for (p, t) in &self.file_tags {
+            content.push_str(&format!("{}={}\n", p.display(), t));
+        }
+        let _ = std::fs::write(path, content);
+    }
+
+    pub fn load_paired_devices(&mut self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        path.push("paired_devices.txt");
+        self.zendrop_paired.clear();
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.is_empty() { continue; }
+                if let Some((rest, token)) = line.rsplit_once('=') {
+                    if let Some((name, ip)) = rest.split_once('=') {
+                        self.zendrop_paired.push((name.to_string(), ip.to_string(), token.to_string()));
+                    } else {
+                        self.zendrop_paired.push((rest.to_string(), token.to_string(), String::new()));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn save_paired_devices(&self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        let _ = std::fs::create_dir_all(&path);
+        path.push("paired_devices.txt");
+        let mut content = String::new();
+        for (name, ip, token) in &self.zendrop_paired {
+            content.push_str(&format!("{}={}={}\n", name, ip, token));
+        }
+        let _ = std::fs::write(path, content);
+    }
+
+    pub fn pair_device(&mut self, target_ip: String) {
+        self.zendrop_pairing_active = true;
+        self.zendrop_status_msg = std::sync::Arc::new(std::sync::Mutex::new(Some("Sending pairing request...".to_string())));
+        
+        let ip = target_ip.clone();
+        let status_arc = self.zendrop_status_msg.clone();
+        let pending_refresh = self.pending_refresh.clone();
+
+        std::thread::spawn(move || {
+            use std::net::TcpStream;
+            use std::io::{Write, Read};
+
+            let local_name = std::env::var("USER").unwrap_or_else(|_| "Desktop".to_string()) + "-ZenFile";
+            let local_ip = "127.0.0.1".to_string(); // Receiver can detect peer IP
+
+            let mut stream = match TcpStream::connect((ip.as_str(), 8888)) {
+                Ok(s) => s,
+                Err(e) => {
+                    *status_arc.lock().unwrap() = Some(format!("Connection failed: {}", e));
+                    return;
+                }
+            };
+
+            let _ = stream.set_nodelay(true);
+            let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(10)));
+            let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(35)));
+
+            let name_bytes = local_name.as_bytes();
+            let lip_bytes = local_ip.as_bytes();
+
+            let mut packet = Vec::new();
+            packet.extend_from_slice(&0xFFFF_u16.to_be_bytes());
+            packet.extend_from_slice(&(name_bytes.len() as u16).to_be_bytes());
+            packet.extend_from_slice(name_bytes);
+            packet.extend_from_slice(&(lip_bytes.len() as u16).to_be_bytes());
+            packet.extend_from_slice(lip_bytes);
+
+            if stream.write_all(&packet).is_err() || stream.flush().is_err() {
+                *status_arc.lock().unwrap() = Some("Failed to send pairing request".to_string());
+                return;
+            }
+
+            *status_arc.lock().unwrap() = Some("Request sent. Awaiting acceptance on mobile...".to_string());
+
+            let mut resp = [0u8; 1];
+            if stream.read_exact(&mut resp).is_err() {
+                *status_arc.lock().unwrap() = Some("Pairing request timed out or declined".to_string());
+                return;
+            }
+
+            if resp[0] == 0x01 {
+                *status_arc.lock().unwrap() = Some("Pairing successful!".to_string());
+                let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                path.push("zenthra");
+                let _ = std::fs::create_dir_all(&path);
+                path.push("paired_devices.txt");
+                if let Ok(mut file) = std::fs::OpenOptions::new().append(true).create(true).open(path) {
+                    use std::io::Write as _;
+                    let _ = writeln!(file, "Mobile-Phone={}", ip);
+                }
+                pending_refresh.store(true, std::sync::atomic::Ordering::SeqCst);
+            } else {
+                *status_arc.lock().unwrap() = Some("Pairing declined by mobile user".to_string());
+            }
+        });
+
+        // Instantly reload
+        self.load_paired_devices();
+        self.zendrop_pairing_active = false;
+    }
+
+    pub fn load_paired_devices(&mut self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        path.push("paired_devices.txt");
+        self.zendrop_paired.clear();
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.is_empty() { continue; }
+                let parts: Vec<&str> = line.split('=').collect();
+                if parts.len() == 3 {
+                    self.zendrop_paired.push((parts[0].to_string(), parts[1].to_string(), parts[2].to_string()));
+                } else if parts.len() == 2 {
+                    self.zendrop_paired.push((parts[0].to_string(), parts[1].to_string(), String::new()));
+                } else if parts.len() == 2 {
+                    self.zendrop_paired.push((parts[0].to_string(), parts[1].to_string(), String::new()));
+                }
+            }
+        }
+    }
+
+    pub fn save_paired_devices(&self) {
+        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("zenthra");
+        let _ = std::fs::create_dir_all(&path);
+        path.push("paired_devices.txt");
+        let mut content = String::new();
+        for (name, ip, token) in &self.zendrop_paired {
+            content.push_str(&format!("{}={}={}\n", name, ip, token));
+        }
+        let _ = std::fs::write(path, content);
+    }
+
+    pub fn forget_paired_device(&mut self, ip: String) {
+        let peer_token = self.zendrop_paired.iter().find(|(_, pip, _)| pip == &ip).map(|(_, _, tok)| tok.clone()).unwrap_or_default();
+        let target_ip = ip.clone();
+        
+        std::thread::spawn(move || {
+            use std::net::TcpStream;
+            use std::io::Write;
+            if let Ok(mut stream) = TcpStream::connect((target_ip.as_str(), 8888)) {
+                let _ = stream.set_nodelay(true);
+                let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(3)));
+                let mut packet = Vec::new();
+                packet.extend_from_slice(&0xFFFF_u16.to_be_bytes());
+                packet.extend_from_slice(&0xFFFF_u16.to_be_bytes());
+                let token_bytes = peer_token.as_bytes();
+                let token_len = token_bytes.len() as u16;
+                packet.extend_from_slice(&token_len.to_be_bytes());
+                packet.extend_from_slice(token_bytes);
+                let _ = stream.write_all(&packet);
+                let _ = stream.flush();
+            }
+        });
+
+        self.zendrop_paired.retain(|(_, pip, _)| pip != &ip);
+        self.save_paired_devices();
+    }
+
+    pub fn pair_device(&mut self, target_ip: String) {
+        self.zendrop_pairing_active = true;
+        self.zendrop_status_msg = std::sync::Arc::new(std::sync::Mutex::new(Some("Sending pairing request...".to_string())));
+        
+        let ip = target_ip.clone();
+        let status_arc = self.zendrop_status_msg.clone();
+        let pending_refresh = self.pending_refresh.clone();
+
+        std::thread::spawn(move || {
+            use std::net::TcpStream;
+            use std::io::{Write, Read};
+            use std::hash::{Hash, Hasher};
+
+            let local_name = std::env::var("USER").unwrap_or_else(|_| "Desktop".to_string()) + "-ZenFile";
+            let local_ip = "127.0.0.1".to_string();
+            
+            let generated_token = {
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                std::time::SystemTime::now().hash(&mut hasher);
+                format!("{:x}", hasher.finish())
+            };
+
+            let mut stream = match TcpStream::connect((ip.as_str(), 8888)) {
+                Ok(s) => s,
+                Err(e) => {
+                    *status_arc.lock().unwrap() = Some(format!("Connection failed: {}", e));
+                    return;
+                }
+            };
+
+            let _ = stream.set_nodelay(true);
+            let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(10)));
+            let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(35)));
+
+            let mut payload = Vec::new();
+            payload.extend_from_slice(&0xFFFF_u16.to_be_bytes());
+
+            let name_bytes = local_name.as_bytes();
+            payload.extend_from_slice(&(name_bytes.len() as u16).to_be_bytes());
+            payload.extend_from_slice(name_bytes);
+
+            let ip_bytes = local_ip.as_bytes();
+            payload.extend_from_slice(&(ip_bytes.len() as u16).to_be_bytes());
+            payload.extend_from_slice(ip_bytes);
+
+            let token_bytes = generated_token.as_bytes();
+            payload.extend_from_slice(&(token_bytes.len() as u16).to_be_bytes());
+            payload.extend_from_slice(token_bytes);
+
+            if stream.write_all(&payload).is_err() || stream.flush().is_err() {
+                *status_arc.lock().unwrap() = Some("Failed to send pairing request".to_string());
+                return;
+            }
+
+            let mut resp = [0u8; 1];
+            if stream.read_exact(&mut resp).is_err() {
+                *status_arc.lock().unwrap() = Some("Pairing request timed out or declined".to_string());
+                return;
+            }
+
+            if resp[0] == 0x01 {
+                *status_arc.lock().unwrap() = Some("Paired successfully!".to_string());
+                let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+                path.push("zenthra");
+                let _ = std::fs::create_dir_all(&path);
+                path.push("paired_devices.txt");
+                if let Ok(mut file) = std::fs::OpenOptions::new().append(true).create(true).open(path) {
+                    use std::io::Write as _;
+                    let _ = writeln!(file, "{}={}={}", local_name, ip, generated_token);
+                }
+                pending_refresh.store(true, std::sync::atomic::Ordering::SeqCst);
+            } else {
+                *status_arc.lock().unwrap() = Some("Pairing request was declined".to_string());
+            }
+        });
+    }
+
+    /// Reload the files in the current folder.
+    pub fn scan_current_dir(&mut self) {
+        self.items.clear();
+        self.selected_idx = None;
+        self.text_preview = None;
+
+        if let Ok(entries) = std::fs::read_dir(&self.current_dir) {
+            let mut folders = Vec::new();
+            let mut files = Vec::new();
+
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let name = path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("Unknown File")
+                    .to_string();
+
+                let metadata = entry.metadata().ok();
+                let is_dir = path.is_dir();
+                let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                let modified = metadata.as_ref().and_then(|m| m.modified().ok());
+
+                let (display_type, category) = get_file_info(&path);
+                let mut extension = path.extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                let name_lower = name.to_lowercase();
+                match name_lower.as_str() {
+                    "cargo.toml" | "cargo.lock" | "pom.xml" | "build.gradle" | "settings.gradle" | 
+                    "package.json" | "package-lock.json" | "yarn.lock" | "pnpm-lock.yaml" | "pnpm-lock.yml" | 
+                    "bun.lock" | "bun.lockb" | "makefile" => {
+                        extension = name_lower.clone();
+                    }
+                    _ => {
+                        if name_lower.ends_with(".log") || name_lower == "log" || name_lower == "logs" {
+                            extension = "log".to_string();
+                        } else if name_lower.starts_with(".env") {
+fn read_from_clipboard() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("powershell")
+            .args(&["-NoProfile", "-Command", "Get-Clipboard"])
+            .output()
+            .ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("pbpaste").output().ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(output) = std::process::Command::new("wl-paste").output() {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xclip")
+            .args(&["-o", "-selection", "clipboard"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xsel")
+            .args(&["-o", "-b"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+    }
+    None
+}                            extension = "env".to_string();
+                        } else if extension.is_empty() && name.starts_with('.') {
+                            extension = name[1..].to_string();
+                        }
+                    }
+                }
+
+                let item = FileItem {
+                    name,
+                    path,
+                    is_dir,
+                    size,
+                    modified,
+                    category,
+                    display_type,
+                    extension,
+                };
+
+                if is_dir {
+                    folders.push(item);
+                } else {
+                    files.push(item);
+                }
+            }
+
+            // Sort folders and files using chosen sort criteria
+            let sort_by = self.sort_by;
+            let sort_order = self.sort_order;
+            let sort_fn = |a: &FileItem, b: &FileItem| {
+                let cmp = match sort_by {
+                    SortBy::Name => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+                    SortBy::Size => a.size.cmp(&b.size),
+                    SortBy::Type => a.display_type.to_lowercase().cmp(&b.display_type.to_lowercase()),
+                    SortBy::DateModified => a.modified.cmp(&b.modified),
+                };
+                match sort_order {
+                    SortOrder::Ascending => cmp,
+                    SortOrder::Descending => cmp.reverse(),
+                }
+            };
+            folders.sort_by(sort_fn);
+            files.sort_by(sort_fn);
+
+            self.items = folders;
+            self.items.extend(files);
+        }
+    }
+
+    /// Retrieve the filtered list of items matching the active search query.
+    pub fn get_filtered_items(&self) -> Vec<FileItem> {
+        let query = self.search_query.trim().to_lowercase();
+        self.items.iter()
+            .filter(|item| {
+                if query.is_empty() {
+                    true
+                } else {
+                    item.name.to_lowercase().contains(&query)
+                }
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Selects an item in the current filtered view, loading text previews if applicable.
+    pub fn select_item(&mut self, filtered_idx: usize) {
+        let filtered = self.get_filtered_items();
+        if filtered_idx < filtered.len() {
+            let item_path = filtered[filtered_idx].path.clone();
+            
+            // Map back to global index in self.items
+            if let Some(global_idx) = self.items.iter().position(|it| it.path == item_path) {
+                self.selected_idx = Some(global_idx);
+                self.text_preview = None;
+
+                let item = &self.items[global_idx];
+                if !item.is_dir && item.size < 500_000 {
+                    // Try to load a text preview snippet if it's UTF-8 and contains no null bytes
+                    if let Ok(content) = std::fs::read_to_string(&item.path) {
+                        if !content.contains('\0') {
+                            let snippet: String = content.chars().take(300).collect();
+                            let display_snippet = if content.chars().count() > 300 {
+                                format!("{}...", snippet)
+                            } else {
+                                snippet
+                            };
+                            self.text_preview = Some(display_snippet);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Navigate to a new directory path.
+    pub fn change_dir(&mut self, new_path: PathBuf) {
+        if new_path.exists() && new_path.is_dir() {
+            // Truncate any forward history
+            self.history.truncate(self.history_idx + 1);
+            self.history.push(new_path.clone());
+            self.history_idx = self.history.len() - 1;
+            
+            self.current_dir = new_path;
+            self.search_query.clear();
+            self.clear_selection();
+            self.scan_current_dir();
+        }
+    }
+
+    pub fn mount_and_change_dir_by_dev(&mut self, dev_path: &Path) {
+        let dev_str = dev_path.to_string_lossy();
+        let output = std::process::Command::new("udisksctl")
+            .args(&["mount", "-b", &dev_str])
+            .output();
+        if let Ok(out) = output {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            
+            let mut mount_point = None;
+            if let Some(pos) = stdout.find(" at ") {
+                mount_point = Some(stdout[pos + 4..].trim().to_string());
+            } else if let Some(pos) = stderr.find(" mounted at ") {
+                mount_point = Some(stderr[pos + 12..].trim().to_string());
+            }
+            
+            if let Some(mp) = mount_point {
+                let path = PathBuf::from(mp);
+                if path.exists() && path.is_dir() {
+                    self.change_dir(path);
+                }
+            }
+        }
+    }
+
+    pub fn mount_and_change_dir_by_dev(&mut self, dev_path: &Path) {
+        let dev_str = dev_path.to_string_lossy();
+        let output = std::process::Command::new("udisksctl")
+            .args(&["mount", "-b", &dev_str])
+            .output();
+        if let Ok(out) = output {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            
+            let mut mount_point = None;
+            if let Some(pos) = stdout.find(" at ") {
+                mount_point = Some(stdout[pos + 4..].trim().to_string());
+            } else if let Some(pos) = stderr.find(" mounted at ") {
+                mount_point = Some(stderr[pos + 12..].trim().to_string());
+            }
+            
+            if let Some(mp) = mount_point {
+                let path = PathBuf::from(mp);
+                if path.exists() && path.is_dir() {
+                    self.change_dir(path);
+                }
+            }
+        }
+        self.trigger_drive_refresh();
+    }
+
+    pub fn unmount_dev(&mut self, dev_str: &str) {
+        let output = std::process::Command::new("udisksctl")
+            .args(&["unmount", "-b", dev_str])
+            .output();
+        if let Ok(_) = output {
+            if !self.current_dir.exists() {
+                let fallback = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+                self.change_dir(fallback);
+            } else {
+                self.scan_current_dir();
+            }
+        }
+        self.trigger_drive_refresh();
+    }
+
+    pub fn unmount_dev(&mut self, dev_str: &str) {
+        let output = std::process::Command::new("udisksctl")
+            .args(&["unmount", "-b", dev_str])
+            .output();
+        if let Ok(_) = output {
+            if !self.current_dir.exists() {
+                let fallback = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+                self.change_dir(fallback);
+            } else {
+                self.scan_current_dir();
+            }
+        }
+    }
+
+    /// Go back in history.
+    pub fn go_back(&mut self) -> bool {
+        if self.history_idx > 0 {
+            self.history_idx -= 1;
+            self.current_dir = self.history[self.history_idx].clone();
+            self.search_query.clear();
+            self.clear_selection();
+            self.scan_current_dir();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Go forward in history.
+    pub fn go_forward(&mut self) -> bool {
+        if self.history_idx + 1 < self.history.len() {
+            self.history_idx += 1;
+            self.current_dir = self.history[self.history_idx].clone();
+            self.search_query.clear();
+            self.clear_selection();
+            self.scan_current_dir();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Go up to parent folder.
+    pub fn go_up(&mut self) {
+        if let Some(parent) = self.current_dir.parent() {
+            self.change_dir(parent.to_path_buf());
+        }
+    }
+
+    /// Clear all selected items.
+    pub fn clear_selection(&mut self) {
+        self.selected_paths.clear();
+        self.selected_idx = None;
+        self.select_anchor = None;
+        self.text_preview = None;
+    }
+
+    /// Select a single item (clearing any existing selection).
+    pub fn select_single(&mut self, filtered_idx: usize) {
+        self.clear_selection();
+        let filtered = self.get_filtered_items();
+        if filtered_idx < filtered.len() {
+            let item_path = filtered[filtered_idx].path.clone();
+            self.selected_paths.insert(item_path);
+            self.select_anchor = Some(filtered_idx);
+            
+            // Map back to global index in self.items
+            if let Some(global_idx) = self.items.iter().position(|it| it.path == filtered[filtered_idx].path) {
+                self.selected_idx = Some(global_idx);
+                // Load preview
+                self.select_item(global_idx);
+            }
+        }
+    }
+
+    /// Toggle selection state of a single item.
+    pub fn toggle_select(&mut self, filtered_idx: usize) {
+        let filtered = self.get_filtered_items();
+        if filtered_idx < filtered.len() {
+            let item_path = filtered[filtered_idx].path.clone();
+            if self.selected_paths.contains(&item_path) {
+                self.selected_paths.remove(&item_path);
+                if self.selected_idx.map(|idx| &self.items[idx].path) == Some(&item_path) {
+                    self.selected_idx = None;
+                    self.text_preview = None;
+                }
+            } else {
+                self.selected_paths.insert(item_path.clone());
+                // Map back to global index in self.items
+                if let Some(global_idx) = self.items.iter().position(|it| it.path == item_path) {
+                    self.selected_idx = Some(global_idx);
+                    // Load preview
+                    self.select_item(global_idx);
+                }
+            }
+            self.select_anchor = Some(filtered_idx);
+        }
+    }
+
+    /// Select a range of items from from_idx to to_idx.
+    pub fn select_range(&mut self, from_idx: usize, to_idx: usize) {
+        let filtered = self.get_filtered_items();
+        let start = from_idx.min(to_idx);
+        let end = from_idx.max(to_idx);
+        for idx in start..=end {
+            if idx < filtered.len() {
+                self.selected_paths.insert(filtered[idx].path.clone());
+            }
+        }
+        // Set last clicked/focused
+        if to_idx < filtered.len() {
+            let item_path = filtered[to_idx].path.clone();
+            if let Some(global_idx) = self.items.iter().position(|it| it.path == item_path) {
+                self.selected_idx = Some(global_idx);
+                self.select_item(global_idx);
+            }
+        }
+    }
+
+    /// Spawn terminal in selected or current folder (cross-platform).
+    pub fn open_terminal_in(&self, dir: &std::path::Path) {
+        let path_str = dir.to_string_lossy().to_string();
+        std::thread::spawn(move || {
+            #[cfg(target_os = "windows")]
+            {
+                // Try Windows Terminal first, fall back to cmd.exe
+                if std::process::Command::new("wt")
+                    .args(&["-d", &path_str])
+                    .spawn()
+                    .is_err()
+                {
+                    let _ = std::process::Command::new("cmd")
+                        .args(&["/C", "start", "cmd.exe"])
+                        .current_dir(&path_str)
+                        .spawn();
+                }
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let script = format!("tell app \"Terminal\" to do script \"cd '{}'\" activate", path_str);
+                let _ = std::process::Command::new("osascript")
+                    .args(&["-e", &script])
+                    .spawn();
+            }
+            #[cfg(target_os = "linux")]
+            {
+                let terminals = [
+                    ("kitty", vec!["--directory".to_string(), path_str.clone()]),
+                    ("alacritty", vec!["--working-directory".to_string(), path_str.clone()]),
+                    ("gnome-terminal", vec!["--working-directory".to_string(), path_str.clone()]),
+                    ("konsole", vec!["--workdir".to_string(), path_str.clone()]),
+                    ("xterm", vec!["-e".to_string(), "bash".to_string(), "-c".to_string(), format!("cd '{}' && exec bash", path_str)]),
+                ];
+                for (term, args) in terminals {
+                    if std::process::Command::new(term)
+                        .args(&args)
+                        .spawn()
+                        .is_ok()
+                    {
+                        return;
+                    }
+                }
+            }
+        });
+    }
+
+    /// Copies a given path string to the system clipboard (cross-platform).
+    pub fn copy_path_to_clipboard(&self, path_str: &str) {
+        let text = path_str.to_string();
+        std::thread::spawn(move || {
+            #[cfg(target_os = "windows")]
+            {
+                use std::io::Write;
+                if let Ok(mut child) = std::process::Command::new("clip")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                }
+            }
+            #[cfg(target_os = "macos")]
+            {
+                use std::io::Write;
+                if let Ok(mut child) = std::process::Command::new("pbcopy")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                }
+            }
+            #[cfg(target_os = "linux")]
+            {
+                use std::io::Write;
+                // 1. Try wl-copy (Wayland)
+                if std::process::Command::new("wl-copy")
+                    .arg(&text)
+                    .status()
+                    .is_ok()
+                {
+                    return;
+                }
+                // 2. Try xclip (X11)
+                if let Ok(mut child) = std::process::Command::new("xclip")
+                    .arg("-selection")
+                    .arg("clipboard")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                    return;
+                }
+                // 3. Try xsel (X11 fallback)
+                if let Ok(mut child) = std::process::Command::new("xsel")
+                    .arg("-ib")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                {
+                    if let Some(mut stdin) = child.stdin.take() {
+                        let _ = stdin.write_all(text.as_bytes());
+                    }
+                    let _ = child.wait();
+                }
+            }
+        });
+    }
+
+    /// Moves a file or folder from src to dest_parent folder.
+    pub fn move_item(&mut self, src: &std::path::Path, dest_parent: &std::path::Path) {
+        if !src.exists() || !dest_parent.exists() || !dest_parent.is_dir() {
+            return;
+        }
+        if let Some(filename) = src.file_name() {
+            let dest = dest_parent.join(filename);
+            if dest != src {
+                let _ = std::fs::rename(src, &dest);
+                self.scan_current_dir();
+            }
+        }
+    }
+
+    /// Copies selected files to state.clipboard
+    pub fn copy_selected(&mut self) {
+        if !self.selected_paths.is_empty() {
+            let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
+            self.clipboard = Some((paths, false));
+        }
+    }
+
+    /// Cuts selected files to state.clipboard
+    pub fn cut_selected(&mut self) {
+        if !self.selected_paths.is_empty() {
+            let paths: Vec<PathBuf> = self.selected_paths.iter().cloned().collect();
+            self.clipboard = Some((paths, true));
+        }
+    }
+
+    /// Pastes files currently in state.clipboard to self.current_dir
+    pub fn paste_clipboard(&mut self) {
+        if let Some((src_paths, is_cut)) = self.clipboard.clone() {
+            let mut total_bytes = 0_u64;
+            let mut copy_pairs = Vec::new();
+            let current_dir = self.current_dir.clone();
+
+            for src_path in &src_paths {
+                if !src_path.exists() {
+                    continue;
+                }
+                if let Some(filename) = src_path.file_name() {
+                    let mut dest_path = current_dir.join(filename);
+                    if dest_path == *src_path {
+                        if is_cut {
+                            // Moving to same location is a no-op
+                            continue;
+                        } else {
+                            // Copying to same location should generate a unique name
+                            let stem = dest_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                            let ext = dest_path.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_default();
+                            let mut count = 2;
+                            loop {
+                                let candidate = current_dir.join(format!("{} (copy {}){}", stem, count, ext));
+                                if !candidate.exists() {
+                                    dest_path = candidate;
+                                    break;
+                                }
+                                count += 1;
+                            }
+                        }
+                    }
+
+                    // Expand this src_path recursively to get file pairs
+                    let pairs = expand_copy_paths(src_path, &dest_path);
+                    for (s, d) in pairs {
+                        total_bytes += std::fs::metadata(&s).map(|m| m.len()).unwrap_or(0);
+                        copy_pairs.push((s, d));
+                    }
+                }
+            }
+
+            if copy_pairs.is_empty() {
+                return;
+            }
+
+            // Create a single TransferEntry representing the copy/move operation
+            let filename = if src_paths.len() == 1 {
+                let label = if is_cut { "Move" } else { "Copy" };
+                let name = src_paths[0].file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| "item".to_string());
+                format!("{}: {}", label, name)
+            } else {
+                let label = if is_cut { "Moving" } else { "Copying" };
+                format!("{} {} items", label, src_paths.len())
+            };
+
+            let entry = TransferEntry {
+                filename,
+                total_bytes,
+                sent_bytes: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                status: std::sync::Arc::new(std::sync::Mutex::new(TransferStatus::Sending)),
+                speed_mbps: std::sync::Arc::new(std::sync::Mutex::new(0.0)),
+                started_at: std::time::Instant::now(),
+                cancel_flag: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            };
+
+            let sent_arc = entry.sent_bytes.clone();
+            let status_arc = entry.status.clone();
+            let speed_arc = entry.speed_mbps.clone();
+            let cancel_arc = entry.cancel_flag.clone();
+
+            // Push into transfers list and open notification panel
+            self.zendrop_notif_open = true;
+            self.zendrop_transfers.insert(0, entry);
+            if self.zendrop_transfers.len() > 20 {
+                self.zendrop_transfers.truncate(20);
+            }
+
+            if is_cut {
+                self.clipboard = None;
+            }
+
+            let pending_refresh_clone = self.pending_refresh.clone();
+            let src_paths_clone = src_paths.clone();
+
+            std::thread::spawn(move || {
+                use std::io::{Read, Write};
+                let start_time = std::time::Instant::now();
+                let mut total_copied = 0_u64;
+
+                for (src, dest) in copy_pairs {
+                    if cancel_arc.load(std::sync::atomic::Ordering::SeqCst) {
+                        *status_arc.lock().unwrap() = TransferStatus::Failed;
+                        return;
+                    }
+
+                    if let Some(parent) = dest.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+
+                    // Try rename first for move operations (instant on same volume)
+                    let rename_ok = if is_cut {
+                        std::fs::rename(&src, &dest).is_ok()
+                    } else {
+                        false
+                    };
+
+                    if rename_ok {
+                        let size = std::fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+                        total_copied += size;
+                        sent_arc.store(total_copied, std::sync::atomic::Ordering::SeqCst);
+                    } else {
+                        // Otherwise, copy chunk by chunk
+                        let mut f_src = match std::fs::File::open(&src) {
+                            Ok(f) => f,
+                            Err(_) => {
+                                *status_arc.lock().unwrap() = TransferStatus::Failed;
+                                return;
+                            }
+                        };
+                        let mut f_dest = match std::fs::File::create(&dest) {
+                            Ok(f) => f,
+                            Err(_) => {
+                                *status_arc.lock().unwrap() = TransferStatus::Failed;
+                                return;
+                            }
+                        };
+
+                        let mut buffer = vec![0u8; 1024 * 1024]; // 1MB chunks
+                        let mut copy_ok = false;
+                        loop {
+                            if cancel_arc.load(std::sync::atomic::Ordering::SeqCst) {
+                                drop(f_dest);
+                                let _ = std::fs::remove_file(&dest);
+                                *status_arc.lock().unwrap() = TransferStatus::Failed;
+                                return;
+                            }
+                            let n = match f_src.read(&mut buffer) {
+                                Ok(0) => {
+                                    copy_ok = true;
+                                    break;
+                                }
+                                Ok(n) => n,
+                                Err(_) => break,
+                            };
+                            if f_dest.write_all(&buffer[..n]).is_err() {
+                                break;
+                            }
+                            total_copied += n as u64;
+                            sent_arc.store(total_copied, std::sync::atomic::Ordering::SeqCst);
+                        }
+
+                        if !copy_ok {
+                            *status_arc.lock().unwrap() = TransferStatus::Failed;
+                            return;
+                        }
+
+                        if is_cut {
+                            let _ = std::fs::remove_file(&src);
+                        }
+                    }
+                }
+
+                // Delete original directories if they are cut operations
+                if is_cut {
+                    for path in &src_paths_clone {
+                        if path.is_dir() {
+                            let _ = std::fs::remove_dir_all(path);
+                        }
+                    }
+                }
+
+                let elapsed = start_time.elapsed().as_secs_f32().max(0.001);
+                let mb = total_copied as f32 / 1_048_576.0;
+                *speed_arc.lock().unwrap() = mb / elapsed;
+                *status_arc.lock().unwrap() = TransferStatus::Done;
+                sent_arc.store(total_bytes, std::sync::atomic::Ordering::SeqCst);
+
+                // Notify main UI to refresh folder view
+                pending_refresh_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+            });
+        }
+    }
+}
+
+/// Helper function to expand directory contents iteratively to pre-create folders and list files
+fn expand_copy_paths(src_root: &std::path::Path, dest_root: &std::path::Path) -> Vec<(std::path::PathBuf, std::path::PathBuf)> {
+    let mut result = Vec::new();
+    let mut stack = vec![(src_root.to_path_buf(), dest_root.to_path_buf())];
+    while let Some((src, dest)) = stack.pop() {
+        if src.is_file() {
+            result.push((src, dest));
+        } else if src.is_dir() {
+            let _ = std::fs::create_dir_all(&dest);
+            if let Ok(entries) = std::fs::read_dir(&src) {
+                for entry in entries.flatten() {
+                    let child_src = entry.path();
+                    let child_dest = dest.join(entry.file_name());
+                    stack.push((child_src, child_dest));
+                }
+            }
+        }
+    }
+    result
+}
+
+
+/// Utility for categorizing files and picking descriptive types
+pub fn get_file_info(path: &Path) -> (String, String) {
+    if path.is_dir() {
+        return ("Folder".to_string(), "folder".to_string());
+    }
+
+    let file_name = path.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    // 1. Exact match on filename (case-insensitive)
+    match file_name.as_str() {
+        "cargo.toml" => return ("Rust Cargo Manifest".to_string(), "text".to_string()),
+        "cargo.lock" => return ("Cargo Lockfile".to_string(), "text".to_string()),
+        "pom.xml" => return ("Maven Project Descriptor".to_string(), "text".to_string()),
+        "build.gradle" => return ("Gradle Build Script".to_string(), "text".to_string()),
+        "settings.gradle" => return ("Gradle Settings Script".to_string(), "text".to_string()),
+        "gradlew" | "gradlew.bat" => return ("Gradle Wrapper".to_string(), "executable".to_string()),
+        "package.json" => return ("Node.js Package Manifest".to_string(), "text".to_string()),
+        "package-lock.json" => return ("npm Lockfile".to_string(), "text".to_string()),
+        "yarn.lock" => return ("Yarn Lockfile".to_string(), "text".to_string()),
+        "pnpm-lock.yaml" | "pnpm-lock.yml" => return ("pnpm Lockfile".to_string(), "text".to_string()),
+        "bun.lock" | "bun.lockb" => return ("Bun Lockfile".to_string(), "text".to_string()),
+        "makefile" => return ("Build Makefile".to_string(), "text".to_string()),
+        "license" | "license.txt" | "license.md" | "copying" => return ("License Terms".to_string(), "text".to_string()),
+        _ => {}
+    }
+
+    if file_name.ends_with(".log") || file_name == "log" || file_name == "logs" {
+        return ("Log File".to_string(), "text".to_string());
+    }
+
+    if file_name.starts_with(".env") {
+        return ("Environment Configuration".to_string(), "text".to_string());
+    }
+
+    let mut ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if ext.is_empty() && file_name.starts_with('.') {
+        ext = file_name[1..].to_string();
+    }
+
+    match ext.as_str() {
+        "jpg" | "jpeg" | "png" | "webp" | "gif" | "bmp" => ("Image File".to_string(), "image".to_string()),
+        "txt" | "md" | "csv" => ("Text Document".to_string(), "text".to_string()),
+        
+        // Developer Source Code
+        "rs" | "toml" | "json" | "js" | "ts" | "py" | "c" | "cpp" | "cc" | "cxx" | "h" | "hpp" | "go" | "html" | "css" | 
+        "yml" | "yaml" | "java" | "kt" | "kts" | "cs" | "swift" | "dart" | "php" | "rb" | "scala" | "lua" | "sql" | 
+        "r" | "pl" | "pm" | "sh" | "bash" | "zsh" | "tsx" | "jsx" | "asm" | "s" | "assembly" | "diff" | "patch" | "properties" | "gradle" => {
+            ("Source Code".to_string(), "text".to_string())
+        }
+        
+        // Configuration / Dotfiles
+        "gitignore" | "dockerignore" | "env" | "editorconfig" | "babelrc" | "eslintrc" | "prettierrc" => {
+            ("Configuration File".to_string(), "text".to_string())
+        }
+        
+        // Archives
+        "zip" | "tar" | "gz" | "bz2" | "xz" | "rar" | "7z" => ("Archive File".to_string(), "archive".to_string()),
+        
+        // Documents
+        "pdf" | "doc" | "docx" | "ppt" | "pptx" => ("Document File".to_string(), "document".to_string()),
+        "xls" | "xlsx" | "ods" => ("Spreadsheet".to_string(), "document".to_string()),
+        
+        // Executables / Scripts
+        "bat" | "cmd" | "ps1" => ("Script File".to_string(), "executable".to_string()),
+        "exe" | "bin" | "msi" | "app" => ("Executable Program".to_string(), "executable".to_string()),
+        
+        // Compiled code and Bytecode
+        "class" => ("Java Class File".to_string(), "other".to_string()),
+        "jar" | "war" => ("Java Archive".to_string(), "archive".to_string()),
+        "o" | "obj" | "a" | "lib" | "so" | "dll" | "dylib" => ("Compiled Object / Library".to_string(), "other".to_string()),
+        
+        _ => ("Generic File".to_string(), "other".to_string()),
+    }
+}
+
+/// Helper to format byte counts into user-friendly units
+pub fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1024;
+    const MB: u64 = 1024 * 1024;
+    const GB: u64 = 1024 * 1024 * 1024;
+
+    if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} B", bytes)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DiskSpaceInfo {
+    pub total: u64,
+    pub used: u64,
+    pub free: u64,
+}
+
+pub fn query_disk_space(path: &Path) -> Option<DiskSpaceInfo> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let output = std::process::Command::new("df")
+            .args(&["-B1", path.to_str()?])
+            .output()
+            .ok()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let line = stdout.lines().nth(1)?;
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 4 {
+            let total = parts[1].parse::<u64>().ok()?;
+            let used = parts[2].parse::<u64>().ok()?;
+            let free = parts[3].parse::<u64>().ok()?;
+            Some(DiskSpaceInfo { total, used, free })
+        } else {
+            None
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        None
+    }
+}
+
+pub fn query_cpu_usage() -> f32 {
+    if let Ok(loadavg) = std::fs::read_to_string("/proc/loadavg") {
+        let parts: Vec<&str> = loadavg.split_whitespace().collect();
+        if !parts.is_empty() {
+            if let Ok(val) = parts[0].parse::<f32>() {
+                let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4) as f32;
+                return (val / cores * 100.0).clamp(0.0, 100.0);
+            }
+        }
+    }
+    25.0
+}
+
+pub fn query_ram_usage() -> Option<(u64, u64)> {
+    let content = std::fs::read_to_string("/proc/meminfo").ok()?;
+    let mut total = 0;
+    let mut available = 0;
+    for line in content.lines() {
+        if line.starts_with("MemTotal:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                total = parts[1].parse::<u64>().ok()? * 1024;
+            }
+        } else if line.starts_with("MemAvailable:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                available = parts[1].parse::<u64>().ok()? * 1024;
+            }
+        }
+    }
+    if total > 0 {
+        Some((total - available, total))
+    } else {
+        None
+    }
+}
+
+fn get_default_gateway() -> Option<String> {
+    let content = std::fs::read_to_string("/proc/net/route").ok()?;
+    for line in content.lines().skip(1) {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 3 {
+            let dest = parts[1];
+            let gw_hex = parts[2];
+            if dest == "00000000" && gw_hex != "00000000" {
+                if let Ok(val) = u32::from_str_radix(gw_hex, 16) {
+                    let bytes = val.to_ne_bytes();
+                    return Some(format!("{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3]));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Scan /proc/net/arp for recently seen LAN devices.
+pub fn scan_zendrop_devices() -> Vec<crate::state::ZendropDevice> {
+    let mut devices = Vec::new();
+
+    // Auto-inject default gateway (e.g. mobile hotspot host)
+    if let Some(gw_ip) = get_default_gateway() {
+        devices.push(crate::state::ZendropDevice {
+            ip: gw_ip,
+            mac: "Hotspot".to_string(),
+            hostname: "Mobile App Gateway".to_string(),
+            iface: "wlp2s0".to_string(),
+        });
+    }
+
+    if let Ok(content) = std::fs::read_to_string("/proc/net/arp") {
+        for line in content.lines().skip(1) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            // Format: IP, HW type, Flags, HW address, Mask, Device
+            if parts.len() < 6 { continue; }
+            let ip    = parts[0].to_string();
+            let flags = parts[2];
+            let mac   = parts[3].to_string();
+            let iface = parts[5].to_string();
+
+            // Flags 0x0 = incomplete (no reply), skip those
+            if flags == "0x0" || mac == "00:00:00:00:00:00" { continue; }
+
+            // Avoid duplication of gateway IP
+            if devices.iter().any(|d| d.ip == ip) { continue; }
+
+            // Try a simple hostname lookup via /etc/hosts first, then fall back to ip
+            let hostname = lookup_hostname(&ip);
+
+            devices.push(crate::state::ZendropDevice { ip, mac, hostname, iface });
+        }
+    }
+
+    devices
+}
+
+fn lookup_hostname(ip: &str) -> String {
+    // Check /etc/hosts
+    if let Ok(hosts) = std::fs::read_to_string("/etc/hosts") {
+        for line in hosts.lines() {
+            let line = line.trim();
+            if line.starts_with('#') || line.is_empty() { continue; }
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.first() == Some(&ip) {
+                if let Some(name) = parts.get(1) {
+                    return name.to_string();
+                }
+            }
+        }
+    }
+    // Fall back to IP itself
+    ip.to_string()
+}
+
+pub fn query_network_name() -> String {
+    // Try iwgetid -r
+    if let Ok(output) = std::process::Command::new("iwgetid")
+        .arg("-r")
+        .output()
+    {
+        if output.status.success() {
+            let ssid = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !ssid.is_empty() {
+                return ssid;
+            }
+        }
+    }
+
+    // Try nmcli as fallback
+    if let Ok(output) = std::process::Command::new("nmcli")
+        .args(&["-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if line.starts_with("yes:") {
+                    let ssid = line.trim_start_matches("yes:").trim().to_string();
+                    if !ssid.is_empty() {
+                        return ssid;
+                    }
+                }
+            }
+        }
+    }
+
+    "Wired / Local Network".to_string()
+}
+
+pub fn scan_wifi_networks() -> Vec<crate::state::WifiNetwork> {
+    let output = match std::process::Command::new("nmcli")
+        .args(&["-t", "-f", "SSID,SIGNAL,SECURITY,ACTIVE", "dev", "wifi"])
+        .output()
+    {
+        Ok(out) => out,
+        Err(_) => return Vec::new(),
+    };
+
+    if !output.status.success() {
+        return Vec::new();
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut networks_map = std::collections::HashMap::new();
+
+    for line in stdout.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        if parts.len() < 4 {
+            continue;
+        }
+        let ssid = parts[0].trim().to_string();
+        if ssid.is_empty() {
+            continue;
+        }
+        let signal = parts[1].trim().parse::<u8>().unwrap_or(0);
+        let security = parts[2].trim().to_string();
+        let active = parts[3].trim().eq_ignore_ascii_case("yes");
+
+        let entry = networks_map.entry(ssid.clone()).or_insert(crate::state::WifiNetwork {
+            ssid: ssid.clone(),
+            signal,
+            security: security.clone(),
+            active,
+        });
+
+        if active {
+            entry.active = true;
+            entry.signal = signal;
+        } else if !entry.active && signal > entry.signal {
+            *entry = crate::state::WifiNetwork {
+                ssid,
+                signal,
+                security,
+                active,
+            };
+        }
+    }
+
+    let mut list: Vec<_> = networks_map.into_values().collect();
+    list.sort_by(|a, b| {
+        if a.active != b.active {
+            b.active.cmp(&a.active)
+        } else {
+            b.signal.cmp(&a.signal)
+        }
+    });
+
+    list
+}
+
+fn collect_files_recursive(path: std::path::PathBuf, base_path: &std::path::Path, files: &mut Vec<(String, std::path::PathBuf)>) -> std::io::Result<()> {
+    if path.is_file() {
+        let rel_path = path.strip_prefix(base_path)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .into_owned();
+        files.push((rel_path, path));
+    } else if path.is_dir() {
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            collect_files_recursive(entry.path(), base_path, files)?;
+        }
+    }
+    Ok(())
+}
+
+fn read_from_clipboard() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("powershell")
+            .args(&["-NoProfile", "-Command", "Get-Clipboard"])
+            .output()
+            .ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("pbpaste").output().ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(output) = std::process::Command::new("wl-paste").output() {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xclip")
+            .args(&["-o", "-selection", "clipboard"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xsel")
+            .args(&["-o", "-b"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+    }
+    None
+}
+
+
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct DiskSpaceInfo {
+    pub total: u64,
+    pub used: u64,
+    pub free: u64,
+}
+
+pub fn query_disk_space(path: &Path) -> Option<DiskSpaceInfo> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let output = std::process::Command::new("df")
+            .args(&["-B1", path.to_str()?])
+            .output()
+            .ok()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let line = stdout.lines().nth(1)?;
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 4 {
+            let total = parts[1].parse::<u64>().ok()?;
+            let used = parts[2].parse::<u64>().ok()?;
+            let free = parts[3].parse::<u64>().ok()?;
+            Some(DiskSpaceInfo { total, used, free })
+        } else {
+            None
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        None
+    }
+}
+
+pub fn query_cpu_usage() -> f32 {
+    if let Ok(loadavg) = std::fs::read_to_string("/proc/loadavg") {
+        let parts: Vec<&str> = loadavg.split_whitespace().collect();
+        if !parts.is_empty() {
+            if let Ok(val) = parts[0].parse::<f32>() {
+                let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4) as f32;
+                return (val / cores * 100.0).clamp(0.0, 100.0);
+            }
+        }
+    }
+    25.0
+}
+
+pub fn query_ram_usage() -> Option<(u64, u64)> {
+    let content = std::fs::read_to_string("/proc/meminfo").ok()?;
+    let mut total = 0;
+    let mut available = 0;
+    for line in content.lines() {
+        if line.starts_with("MemTotal:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                total = parts[1].parse::<u64>().ok()? * 1024;
+            }
+        } else if line.starts_with("MemAvailable:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                available = parts[1].parse::<u64>().ok()? * 1024;
+            }
+        }
+    }
+    if total > 0 {
+        Some((total - available, total))
+    } else {
+        None
+    }
+}
+
+fn get_default_gateway() -> Option<String> {
+    let content = std::fs::read_to_string("/proc/net/route").ok()?;
+    for line in content.lines().skip(1) {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 3 {
+            let dest = parts[1];
+            let gw_hex = parts[2];
+            if dest == "00000000" && gw_hex != "00000000" {
+                if let Ok(val) = u32::from_str_radix(gw_hex, 16) {
+                    let bytes = val.to_ne_bytes();
+                    return Some(format!("{}.{}.{}.{}", bytes[0], bytes[1], bytes[2], bytes[3]));
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Scan /proc/net/arp for recently seen LAN devices.
+pub fn scan_zendrop_devices() -> Vec<crate::state::ZendropDevice> {
+    let mut devices = Vec::new();
+
+    // Auto-inject default gateway (e.g. mobile hotspot host)
+    if let Some(gw_ip) = get_default_gateway() {
+        devices.push(crate::state::ZendropDevice {
+            ip: gw_ip,
+            mac: "Hotspot".to_string(),
+            hostname: "Mobile App Gateway".to_string(),
+            iface: "wlp2s0".to_string(),
+        });
+    }
+
+    if let Ok(content) = std::fs::read_to_string("/proc/net/arp") {
+        for line in content.lines().skip(1) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            // Format: IP, HW type, Flags, HW address, Mask, Device
+            if parts.len() < 6 { continue; }
+            let ip    = parts[0].to_string();
+            let flags = parts[2];
+            let mac   = parts[3].to_string();
+            let iface = parts[5].to_string();
+
+            // Flags 0x0 = incomplete (no reply), skip those
+            if flags == "0x0" || mac == "00:00:00:00:00:00" { continue; }
+
+            // Avoid duplication of gateway IP
+            if devices.iter().any(|d| d.ip == ip) { continue; }
+
+            // Try a simple hostname lookup via /etc/hosts first, then fall back to ip
+            let hostname = lookup_hostname(&ip);
+
+            devices.push(crate::state::ZendropDevice { ip, mac, hostname, iface });
+        }
+    }
+
+    devices
+}
+
+fn lookup_hostname(ip: &str) -> String {
+    // Check /etc/hosts
+    if let Ok(hosts) = std::fs::read_to_string("/etc/hosts") {
+        for line in hosts.lines() {
+            let line = line.trim();
+            if line.starts_with('#') || line.is_empty() { continue; }
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.first() == Some(&ip) {
+                if let Some(name) = parts.get(1) {
+                    return name.to_string();
+                }
+            }
+        }
+    }
+    // Fall back to IP itself
+    ip.to_string()
+}
+
+pub fn query_network_name() -> String {
+    // Try iwgetid -r
+    if let Ok(output) = std::process::Command::new("iwgetid")
+        .arg("-r")
+        .output()
+    {
+        if output.status.success() {
+            let ssid = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !ssid.is_empty() {
+                return ssid;
+            }
+        }
+    }
+
+    // Try nmcli as fallback
+    if let Ok(output) = std::process::Command::new("nmcli")
+        .args(&["-t", "-f", "ACTIVE,SSID", "dev", "wifi"])
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if line.starts_with("yes:") {
+                    let ssid = line.trim_start_matches("yes:").trim().to_string();
+                    if !ssid.is_empty() {
+                        return ssid;
+                    }
+                }
+            }
+        }
+    }
+
+    "Wired / Local Network".to_string()
+}
+
+pub fn scan_wifi_networks() -> Vec<crate::state::WifiNetwork> {
+    let output = match std::process::Command::new("nmcli")
+        .args(&["-t", "-f", "SSID,SIGNAL,SECURITY,ACTIVE", "dev", "wifi"])
+        .output()
+    {
+        Ok(out) => out,
+        Err(_) => return Vec::new(),
+    };
+
+    if !output.status.success() {
+        return Vec::new();
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut networks_map = std::collections::HashMap::new();
+
+    for line in stdout.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        if parts.len() < 4 {
+            continue;
+        }
+        let ssid = parts[0].trim().to_string();
+        if ssid.is_empty() {
+            continue;
+        }
+        let signal = parts[1].trim().parse::<u8>().unwrap_or(0);
+        let security = parts[2].trim().to_string();
+        let active = parts[3].trim().eq_ignore_ascii_case("yes");
+
+        let entry = networks_map.entry(ssid.clone()).or_insert(crate::state::WifiNetwork {
+            ssid: ssid.clone(),
+            signal,
+            security: security.clone(),
+            active,
+        });
+
+        if active {
+            entry.active = true;
+            entry.signal = signal;
+        } else if !entry.active && signal > entry.signal {
+            *entry = crate::state::WifiNetwork {
+                ssid,
+                signal,
+                security,
+                active,
+            };
+        }
+    }
+
+    let mut list: Vec<_> = networks_map.into_values().collect();
+    list.sort_by(|a, b| {
+        if a.active != b.active {
+            b.active.cmp(&a.active)
+        } else {
+            b.signal.cmp(&a.signal)
+        }
+    });
+
+    list
+}
+
+fn collect_files_recursive(path: std::path::PathBuf, base_path: &std::path::Path, files: &mut Vec<(String, std::path::PathBuf)>) -> std::io::Result<()> {
+    if path.is_file() {
+        let rel_path = path.strip_prefix(base_path)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .into_owned();
+        files.push((rel_path, path));
+    } else if path.is_dir() {
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            collect_files_recursive(entry.path(), base_path, files)?;
+        }
+    }
+    Ok(())
+}
+
+fn read_from_clipboard() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("powershell")
+            .args(&["-NoProfile", "-Command", "Get-Clipboard"])
+            .output()
+            .ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("pbpaste").output().ok()?;
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if !s.is_empty() {
+                return Some(s);
+            }
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(output) = std::process::Command::new("wl-paste").output() {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xclip")
+            .args(&["-o", "-selection", "clipboard"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+        if let Ok(output) = std::process::Command::new("xsel")
+            .args(&["-o", "-b"])
+            .output()
+        {
+            if output.status.success() {
+                let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return Some(s);
+                }
+            }
+        }
+    }
+    None
+}
+
+
+

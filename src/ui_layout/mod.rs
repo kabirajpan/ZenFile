@@ -8,6 +8,7 @@ pub mod status_bar;
 pub mod dialogs;
 pub mod dashboard;
 pub mod zendrop;
+pub mod notif_panel;
 
 pub use title_bar::*;
 pub use navigation::*;
@@ -18,3 +19,4 @@ pub use status_bar::*;
 pub use dialogs::*;
 pub use dashboard::*;
 pub use zendrop::*;
+pub use notif_panel::*;

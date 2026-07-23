@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ZenFile
+Comment=High-performance Rust file manager and local network sharing tool using ZenDrop
+Exec=file-manager
+Icon=org.zenthra.ZenFile
+Terminal=false
+Categories=Utility;System;FileManager;
+MimeType=inode/directory;
+Keywords=file;manager;network;sharing;transfer;zendrop;
+StartupWMClass=file-manager

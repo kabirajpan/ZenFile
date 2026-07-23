@@ -1,5 +1,5 @@
-use crate::state::FileManagerState;
-use zenthra::{Ui, FontWeight, Align, Id};
+use crate::state::{FileManagerState, TransferStatus};
+use zenthra::{Color, Ui, FontWeight, Align, Id};
 
 pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
@@ -19,10 +19,17 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
         (x, btn_bottom_y)
     } else {
         let x = (ui.width as f32 - panel_w - 12.0).max(0.0);
-        (x, 74.0_f32)
+        (x, 46.0_f32)
     };
 
+    let panel_id = Id::from_u64(999999921);
+    let resolved = super::common::resolve_widget_id(ui, panel_id);
+    if let Some(rect) = ui.screen_layout_cache.get(&resolved) {
+        state.wifi_panel_rect = Some((rect.origin.x, rect.origin.y, rect.size.width, rect.size.height));
+    }
+
     let mut panel = ui.container()
+        .id(panel_id)
         .absolute(panel_x, panel_y)
         .overlay()
         .width(panel_w)
@@ -60,7 +67,13 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
                         .weight(FontWeight::Bold)
                         .color(colors.text_primary)
                         .show();
-                    ui.text(&format!("Network: {}", state.zendrop_network_name))
+                    let is_scanning = state.zendrop_scanning.load(std::sync::atomic::Ordering::SeqCst);
+                    let subtitle = if is_scanning {
+                        "Scanning network...".to_string()
+                    } else {
+                        format!("Network: {}", state.zendrop_network_name)
+                    };
+                    ui.text(&subtitle)
                         .size(9.5)
                         .color(colors.accent)
                         .show();
@@ -91,6 +104,38 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
 
         ui.container().fill_x().height(1.0).bg(colors.border).show(|_| {});
 
+        // Local Device Name
+        ui.container()
+            .fill_x()
+            .padding(10.0, 10.0, 6.0, 10.0)
+            .column()
+            .gap(4.0)
+            .show(|ui| {
+                ui.text("LOCAL DEVICE NAME")
+                    .size(9.0)
+                    .weight(FontWeight::Bold)
+                    .color(colors.text_muted)
+                    .show();
+                
+                let mut name_tmp = state.zendrop_device_name.lock().unwrap().clone();
+                let prev_name = name_tmp.clone();
+                
+                ui.input(&mut name_tmp, "zendrop_local_device_name_input")
+                    .fill_x()
+                    .size(11.0)
+                    .radius_all(6.0)
+                    .border(colors.border, 1.0)
+                    .bg(colors.bg_base)
+                    .show();
+                
+                if name_tmp != prev_name && !name_tmp.trim().is_empty() {
+                    *state.zendrop_device_name.lock().unwrap() = name_tmp.clone();
+                    state.save_device_name(&name_tmp);
+                }
+            });
+
+        ui.container().fill_x().height(1.0).bg(colors.border).show(|_| {});
+
         // ─── Available networks ───────────────────────────────────────────
         ui.container()
             .fill_x()
@@ -102,6 +147,7 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
                     .color(colors.text_muted)
                     .show();
             });
+
 
         let networks = state.zendrop_networks.clone();
         if networks.is_empty() {
@@ -313,27 +359,27 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
                 }
             });
 
-        // ─── Nearby devices list (if toggled/open) ────────────────────────
+        // ─── Paired devices list (if toggled/open) ────────────────────────
         if state.zendrop_show_devices {
             ui.container().fill_x().height(1.0).bg(colors.border).show(|_| {});
             ui.container()
                 .fill_x()
                 .padding(10.0, 8.0, 2.0, 10.0)
                 .show(|ui| {
-                    ui.text("SELECT DEVICE TO SEND TO")
+                    ui.text("PAIRED DEVICES (TAP TO SEND)")
                         .size(8.5)
                         .weight(FontWeight::Bold)
                         .color(colors.accent)
                         .show();
                 });
 
-            let devices = state.zendrop_devices.clone();
-            if devices.is_empty() {
+            let paired = state.zendrop_paired.clone();
+            if paired.is_empty() {
                 ui.container()
                     .fill_x()
                     .padding(12.0, 12.0, 12.0, 12.0)
                     .show(|ui| {
-                        ui.text("No local devices found")
+                        ui.text("No paired devices found. Pair a device below.")
                             .size(10.0)
                             .color(colors.text_dim)
                             .show();
@@ -347,12 +393,138 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
                     .padding(6.0, 6.0, 6.0, 6.0)
                     .gap(4.0)
                     .show(|ui| {
-                        for (idx, device) in devices.iter().enumerate() {
-                            let dev_row_id = Id::from_u64(999_666_100 + idx as u64);
-                            let is_hov = ui.interaction_state.get(&dev_row_id).copied().unwrap_or(0.0) > 0.5;
+                        for (idx, (name, ip, _)) in paired.iter().enumerate() {
+                            let forget_btn_id = Id::from_u64(999_888_100 + idx as u64);
+                            
+                            ui.container()
+                                .fill_x()
+                                .row()
+                                .gap(4.0)
+                                .valign(Align::Center)
+                                .show(|ui| {
+                                    let dev_row_id = Id::from_u64(999_666_200 + idx as u64);
+                                    let is_hov = ui.interaction_state.get(&dev_row_id).copied().unwrap_or(0.0) > 0.5;
 
-                            let dev_row = ui.container()
-                                .id(dev_row_id)
+                                    let dev_row = ui.container()
+                                        .id(dev_row_id)
+                                        .width(260.0)
+                                        .padding(6.0, 6.0, 6.0, 6.0)
+                                        .radius_all(6.0)
+                                        .row()
+                                        .gap(8.0)
+                                        .valign(Align::Center)
+                                        .bg(if is_hov { colors.highlight } else { zenthra::Color::TRANSPARENT })
+                                        .show(|ui| {
+                                            ui.text("\u{f10b}") // phone icon
+                                                .size(12.0)
+                                                .color(colors.accent)
+                                                .show();
+                                            ui.container().column().gap(1.0).show(|ui| {
+                                                ui.text(name)
+                                                    .size(10.5)
+                                                    .weight(FontWeight::Bold)
+                                                    .color(colors.text_primary)
+                                                    .show();
+                                                ui.text(ip)
+                                                    .size(9.0)
+                                                    .color(colors.text_dim)
+                                                    .show();
+                                            });
+                                        });
+
+                                    let h = dev_row.hovered;
+                                    ui.interaction_state.insert(dev_row_id, if h { 1.0 } else { 0.0 });
+
+                                    if dev_row.clicked {
+                                        let device = crate::state::ZendropDevice {
+                                            ip: ip.clone(),
+                                            mac: "".to_string(),
+                                            hostname: name.clone(),
+                                            iface: "".to_string(),
+                                        };
+                                        state.start_zendrop_send(device);
+                                        ui.request_redraw();
+                                    }
+
+                                    // Forget/Delete button
+                                    let is_forget_hov = ui.interaction_state.get(&forget_btn_id).copied().unwrap_or(0.0) > 0.5;
+                                    let forget_btn = ui.container()
+                                        .id(forget_btn_id)
+                                        .width(28.0)
+                                        .height(28.0)
+                                        .radius_all(4.0)
+                                        .bg(if is_forget_hov { zenthra::Color::rgba(220.0/255.0, 60.0/255.0, 60.0/255.0, 0.15) } else { zenthra::Color::TRANSPARENT })
+                                        .valign(Align::Center)
+                                        .halign(Align::Center)
+                                        .show(|ui| {
+                                            ui.text("\u{f1f8}") // trash icon (fa-trash-o)
+                                                .size(10.0)
+                                                .color(if is_forget_hov { zenthra::Color::rgb(220.0/255.0, 60.0/255.0, 60.0/255.0) } else { colors.text_muted })
+                                                .show();
+                                        });
+
+                                    let fh = forget_btn.hovered;
+                                    ui.interaction_state.insert(forget_btn_id, if fh { 1.0 } else { 0.0 });
+
+                                    if forget_btn.clicked {
+                                        state.forget_paired_device(ip.clone());
+                                        ui.request_redraw();
+                                    }
+                                });
+                        }
+                    });
+            }
+
+            // ─── Scanned Devices / Discovery Section ────────────────────────
+            ui.container().fill_x().height(1.0).bg(colors.border).show(|_| {});
+            ui.container()
+                .fill_x()
+                .padding(10.0, 10.0, 4.0, 10.0)
+                .show(|ui| {
+                    ui.text("DISCOVERED DEVICED (TAP TO PAIR)")
+                        .size(8.5)
+                        .weight(FontWeight::Bold)
+                        .color(colors.accent)
+                        .show();
+                });
+
+            let scanned_list = {
+                let scanned = state.zendrop_scanned.lock().unwrap();
+                scanned.clone()
+            };
+            
+            // Filter out already paired devices
+            let unpaired_scanned: Vec<_> = scanned_list.into_iter()
+                .filter(|(name, ip, _)| {
+                    !state.zendrop_paired.iter().any(|(_, paired_ip, _)| paired_ip == ip)
+                })
+                .collect();
+
+            if unpaired_scanned.is_empty() {
+                ui.container()
+                    .fill_x()
+                    .padding(12.0, 12.0, 12.0, 12.0)
+                    .show(|ui| {
+                        ui.text("Scanning local network for devices...")
+                            .size(10.0)
+                            .color(colors.text_dim)
+                            .show();
+                    });
+            } else {
+                ui.container()
+                    .fill_x()
+                    .max_height(140.0)
+                    .scroll_y(true)
+                    .column()
+                    .padding(6.0, 6.0, 6.0, 6.0)
+                    .gap(4.0)
+                    .show(|ui| {
+                        for (idx, (name, ip, _)) in unpaired_scanned.iter().enumerate() {
+                            let scan_row_id = Id::from_u64(999_777_100 + idx as u64);
+                            let is_hov = ui.interaction_state.get(&scan_row_id).copied().unwrap_or(0.0) > 0.5;
+
+                            let scan_row = ui.container()
+                                .id(scan_row_id)
                                 .fill_x()
                                 .padding(8.0, 8.0, 8.0, 8.0)
                                 .radius_all(6.0)
@@ -361,31 +533,48 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
                                 .valign(Align::Center)
                                 .bg(if is_hov { colors.highlight } else { zenthra::Color::TRANSPARENT })
                                 .show(|ui| {
-                                    ui.text(device_icon(&device.hostname, &device.iface))
+                                    ui.text("\u{f10b}") // phone icon
                                         .size(12.0)
-                                        .color(colors.accent)
+                                        .color(colors.text_muted)
                                         .show();
                                     ui.container().column().gap(1.0).show(|ui| {
-                                        ui.text(&device.hostname)
+                                        ui.text(name)
                                             .size(10.5)
                                             .weight(FontWeight::Bold)
                                             .color(colors.text_primary)
                                             .show();
-                                        ui.text(&device.ip)
+                                        ui.text(ip)
                                             .size(9.0)
                                             .color(colors.text_dim)
                                             .show();
                                     });
                                 });
 
-                            let h = dev_row.hovered;
-                            ui.interaction_state.insert(dev_row_id, if h { 1.0 } else { 0.0 });
+                            let h = scan_row.hovered;
+                            ui.interaction_state.insert(scan_row_id, if h { 1.0 } else { 0.0 });
 
-                            if dev_row.clicked {
-                                state.start_zendrop_send(device.clone());
+                            if scan_row.clicked {
+                                state.pair_device(ip.clone());
                                 ui.request_redraw();
                             }
                         }
+                    });
+            }
+
+            // Show status msg during pairing
+            let msg = {
+                let m = state.zendrop_status_msg.lock().unwrap();
+                m.clone()
+            };
+            if let Some(m) = msg {
+                ui.container()
+                    .fill_x()
+                    .padding(10.0, 4.0, 10.0, 10.0)
+                    .show(|ui| {
+                        ui.text(&m)
+                            .size(9.0)
+                            .color(colors.accent)
+                            .show();
                     });
             }
         }

@@ -88,6 +88,7 @@ pub fn draw_about_window(ui: &mut Ui, state: &mut FileManagerState) {
 
 pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
     let Some((mx, my)) = state.context_menu_pos else {
+        ui.interaction_state.remove(&zenthra::Id::from_u64(999999901)); // active submenu key
         return;
     };
 
@@ -105,6 +106,7 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
         menu_h += 26.0; // Rename
         menu_h += 26.0; // Copy
         menu_h += 26.0; // Copy Path
+        menu_h += 26.0; // Send via ZenDrop
         menu_h += 26.0; // Cut
         menu_h += 26.0; // Paste
         menu_h += 9.0;  // Divider
@@ -240,6 +242,25 @@ pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
                     state.context_menu_pos = None;
                     state.context_menu_target = None;
                     ui.request_redraw();
+                }
+ 
+                // Option: Send via ZenDrop
+                let devices = state.zendrop_devices.clone();
+                let has_devices = !devices.is_empty();
+                if has_devices {
+                    ui.sub_menu("Send via ZenDrop").width(menu_w - 12.0).show(|ui| {
+                        for device in &devices {
+                            let label = format!("📶 {}", device.hostname);
+                            if ui.menu_item(&label).show().clicked {
+                                state.start_zendrop_send(device.clone());
+                                state.context_menu_pos = None;
+                                state.context_menu_target = None;
+                                ui.request_redraw();
+                            }
+                        }
+                    });
+                } else {
+                    let _ = draw_menu_item_disabled(ui, "Send via ZenDrop (No devices)", colors, true, "ctx_send_via_zendrop_disabled");
                 }
 
                 // Option: Cut
@@ -846,5 +867,88 @@ pub fn draw_zendrop_send_dialog(ui: &mut Ui, state: &mut FileManagerState) {
     if !show_win {
         state.zendrop_send_target = None;
     }
+}
+
+pub fn draw_zendrop_pair_dialog(ui: &mut zenthra::Ui, state: &mut crate::state::FileManagerState) {
+    let (req_name, req_ip) = {
+        let request = state.zendrop_pair_request.lock().unwrap();
+        match &*request {
+            Some((name, ip)) => (name.clone(), ip.clone()),
+            None => return,
+        }
+    };
+
+    let colors = state.colors();
+    let mut win_pos = [
+        (ui.width as f32 - 340.0) / 2.0,
+        (ui.height as f32 - 160.0) / 2.0,
+    ];
+
+    let mut show_win = true;
+    let mut win = ui.window("Accept Pairing Request", &mut show_win, &mut win_pos)
+        .size(340.0, 160.0)
+        .modal(true)
+        .radius_all(12.0)
+        .header_bg(if state.theme != crate::theme::ThemeMode::Light { colors.bg_base.with_alpha(0.5) } else { colors.bg_base })
+        .header_text_color(colors.text_primary)
+        .header_height(40.0)
+        .closable(false);
+
+    if state.theme == crate::theme::ThemeMode::Glassmorphism {
+        win = win
+            .bg(colors.bg_panel.with_alpha(0.75))
+            .border(zenthra::Color::rgba(255.0/255.0, 255.0/255.0, 255.0/255.0, 0.08), 1.0)
+            .backdrop_filter(zenthra::BackdropFilter::new().blur(18.0, zenthra::style::blur::Type::Glassmorphism));
+    } else {
+        win = win
+            .bg(colors.bg_panel)
+            .border(colors.accent, 1.5);
+    }
+
+    win.show(|ui| {
+        ui.container()
+            .full_width()
+            .padding_all(14.0)
+            .column()
+            .gap(10.0)
+            .show(|ui| {
+                ui.text(&format!("Device \"{}\"", req_name))
+                    .size(11.5)
+                    .weight(FontWeight::Bold)
+                    .color(colors.text_primary)
+                    .show();
+
+                ui.text(&format!("IP Address: {}", req_ip))
+                    .size(10.5)
+                    .color(colors.text_muted)
+                    .show();
+
+                ui.spacing(10.0);
+
+                ui.container().row().gap(8.0).halign(Align::Right).show(|ui| {
+                    let decline_btn = ui.button("Decline")
+                        .width(80.0)
+                        .bg(zenthra::Color::rgb(220.0/255.0, 60.0/255.0, 60.0/255.0))
+                        .radius_all(6.0)
+                        .show();
+                    if decline_btn.clicked {
+                        state.zendrop_pair_result.store(2, std::sync::atomic::Ordering::SeqCst);
+                        ui.request_redraw();
+                    }
+
+                    let accept_btn = ui.button("Accept")
+                        .width(80.0)
+                        .bg(colors.accent)
+                        .text_color(colors.bg_base)
+                        .radius_all(6.0)
+                        .show();
+                    if accept_btn.clicked {
+                        state.zendrop_pair_result.store(1, std::sync::atomic::Ordering::SeqCst);
+                        state.zendrop_paired.push((req_name.clone(), req_ip.clone(), String::new()));
+                        ui.request_redraw();
+                    }
+                });
+            });
+    });
 }
 

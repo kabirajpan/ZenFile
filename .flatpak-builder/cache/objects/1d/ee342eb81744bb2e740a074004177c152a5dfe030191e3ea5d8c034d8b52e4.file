@@ -1,0 +1,48 @@
+{
+  "id" : "org.zenthra.ZenFile",
+  "runtime" : "org.freedesktop.Platform",
+  "runtime-version" : "24.08",
+  "runtime-commit" : "9a6d66049b19987a22bf81015ce0d1fde260df85a45e54695aad3c82f1e198ee",
+  "sdk" : "org.freedesktop.Sdk",
+  "sdk-commit" : "4b619a0fd13462e43211bc8f2c427b13dc70ad601d6c2dde446df8ce1870155b",
+  "command" : "file-manager",
+  "modules" : [
+    {
+      "name" : "zenthra-file-manager",
+      "buildsystem" : "simple",
+      "sources" : [
+        {
+          "path" : "/home/kabir/.cargo-target/release/file-manager",
+          "type" : "file"
+        },
+        {
+          "path" : "org.zenthra.ZenFile.desktop",
+          "type" : "file"
+        },
+        {
+          "path" : "org.zenthra.ZenFile.metainfo.xml",
+          "type" : "file"
+        },
+        {
+          "path" : "org.zenthra.ZenFile.png",
+          "type" : "file"
+        }
+      ],
+      "build-commands" : [
+        "install -Dm755 file-manager /app/bin/file-manager",
+        "install -Dm644 org.zenthra.ZenFile.desktop /app/share/applications/org.zenthra.ZenFile.desktop",
+        "install -Dm644 org.zenthra.ZenFile.metainfo.xml /app/share/metainfo/org.zenthra.ZenFile.metainfo.xml",
+        "install -Dm644 org.zenthra.ZenFile.png /app/share/icons/hicolor/512x512/apps/org.zenthra.ZenFile.png"
+      ]
+    }
+  ],
+  "finish-args" : [
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri",
+    "--share=network",
+    "--device=all",
+    "--filesystem=host"
+  ],
+  "source-date-epoch" : 1784792740
+}

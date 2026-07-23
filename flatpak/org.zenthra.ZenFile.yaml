@@ -1,0 +1,37 @@
+app-id: org.zenthra.ZenFile
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: file-manager
+finish-args:
+  # Display GUI (Wayland & X11 fallback)
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Local Network P2P Discovery and socket sharing
+  - --share=network
+  # Access disk space, device lists, mount blocks
+  - --device=all
+  # Access local filesystem (crucial for a file manager!)
+  - --filesystem=host
+modules:
+  - name: zenthra-file-manager
+    buildsystem: simple
+    build-commands:
+      # Install pre-built host binary
+      - install -Dm755 file-manager /app/bin/file-manager
+      # Install desktop file
+      - install -Dm644 org.zenthra.ZenFile.desktop /app/share/applications/org.zenthra.ZenFile.desktop
+      # Install metainfo file
+      - install -Dm644 org.zenthra.ZenFile.metainfo.xml /app/share/metainfo/org.zenthra.ZenFile.metainfo.xml
+      # Install icon
+      - install -Dm644 org.zenthra.ZenFile.png /app/share/icons/hicolor/512x512/apps/org.zenthra.ZenFile.png
+    sources:
+      - type: file
+        path: /home/kabir/.cargo-target/release/file-manager
+      - type: file
+        path: org.zenthra.ZenFile.desktop
+      - type: file
+        path: org.zenthra.ZenFile.metainfo.xml
+      - type: file
+        path: org.zenthra.ZenFile.png

@@ -36,3 +36,5 @@ assets/final-icons/
 assets/icons/
 *.log
 
+.flatpak-builder/
+build-dir/

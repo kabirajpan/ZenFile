@@ -25,6 +25,34 @@ fn main() {
         .decorations(false)
         .load_font_data(font_bytes)
         .with_ui(move |ui| {
+            // Close panels if clicked outside of them
+            if ui.clicked {
+                if state.zendrop_open {
+                    let clicked_panel = state.wifi_panel_rect.map(|(rx, ry, rw, rh)| {
+                        ui.mouse_x >= rx && ui.mouse_x <= rx + rw && ui.mouse_y >= ry && ui.mouse_y <= ry + rh
+                    }).unwrap_or(false);
+                    let clicked_btn = state.wifi_btn_rect.map(|(rx, ry, rw, rh)| {
+                        ui.mouse_x >= rx && ui.mouse_x <= rx + rw && ui.mouse_y >= ry && ui.mouse_y <= ry + rh
+                    }).unwrap_or(false);
+                    if !clicked_panel && !clicked_btn {
+                        state.zendrop_open = false;
+                        ui.request_redraw();
+                    }
+                }
+                if state.zendrop_notif_open {
+                    let clicked_panel = state.bell_panel_rect.map(|(rx, ry, rw, rh)| {
+                        ui.mouse_x >= rx && ui.mouse_x <= rx + rw && ui.mouse_y >= ry && ui.mouse_y <= ry + rh
+                    }).unwrap_or(false);
+                    let clicked_btn = state.bell_btn_rect.map(|(rx, ry, rw, rh)| {
+                        ui.mouse_x >= rx && ui.mouse_x <= rx + rw && ui.mouse_y >= ry && ui.mouse_y <= ry + rh
+                    }).unwrap_or(false);
+                    if !clicked_panel && !clicked_btn {
+                        state.zendrop_notif_open = false;
+                        ui.request_redraw();
+                    }
+                }
+            }
+
             // Expose the active theme flag to interaction_state so widgets can read it
             let theme_val = if state.theme == ThemeMode::Light { 1.0 } else { 0.0 };
             ui.interaction_state.insert(Id::from_u64(999999999), theme_val);
@@ -197,16 +225,36 @@ fn main() {
                     // 4. Status Bar
                     ui_layout::draw_status_bar(ui, &mut state);
 
-                    // 5. Floating dialogs (e.g. About window)
+                    if state.pending_refresh.load(std::sync::atomic::Ordering::SeqCst) {
+                        state.scan_current_dir();
+                        state.pending_refresh.store(false, std::sync::atomic::Ordering::SeqCst);
+                        ui.request_redraw();
+                    }
+
+                    if let Ok(mut lock) = state.zendrop_scan_results.lock() {
+                        if let Some((devices, networks, name)) = lock.take() {
+                            state.zendrop_devices = devices;
+                            state.zendrop_networks = networks;
+                            state.zendrop_network_name = name;
+                            state.zendrop_scanning.store(false, std::sync::atomic::Ordering::SeqCst);
+                            ui.request_redraw();
+                        }
+                    }
+
                     ui_layout::draw_about_window(ui, &mut state);
                     ui_layout::draw_context_menu(ui, &mut state);
                     ui_layout::draw_info_window(ui, &mut state);
                     ui_layout::draw_wifi_dialog(ui, &mut state);
-                    ui_layout::draw_zendrop_send_dialog(ui, &mut state);
+                    ui_layout::draw_zendrop_pair_dialog(ui, &mut state);
 
-                    // 6. ZenDrop overlay panel
+                    // 6. ZenDrop device panel (wifi icon)
                     if state.zendrop_open {
                         ui_layout::draw_zendrop_panel(ui, &mut state);
+                    }
+
+                    // 7. Notification / transfer progress panel (bell icon)
+                    if state.zendrop_notif_open {
+                        ui_layout::draw_notif_panel(ui, &mut state);
                     }
                 });
         })

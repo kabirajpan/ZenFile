@@ -1,0 +1,5 @@
+[Runtime]
+name=org.zenthra.ZenFile.Debug
+
+[ExtensionOf]
+ref=app/org.zenthra.ZenFile/x86_64/master

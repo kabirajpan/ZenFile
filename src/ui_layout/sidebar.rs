@@ -68,11 +68,11 @@ pub fn draw_sidebar(ui: &mut Ui, state: &mut FileManagerState) {
             }
 
             let resp = dashboard_container.show(|ui| {
-                ui.text(NF_FA_TACHOMETER)
+                ui.text("\u{f148a}")
                     .size(12.0)
                     .color(if is_dashboard_active { colors.text_primary } else { colors.text_muted })
                     .show();
-                ui.text("ZenHub")
+                ui.text("Dashboard")
                     .size(11.5)
                     .color(if is_dashboard_active { colors.text_primary } else { colors.text_muted })
                     .show();
