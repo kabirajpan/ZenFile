@@ -1,5 +1,5 @@
-use crate::state::{FileManagerState, TransferStatus};
-use zenthra::{Color, Ui, FontWeight, Align, Id};
+use crate::state::FileManagerState;
+use zenthra::{Ui, FontWeight, Align, Id};
 
 pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
     let colors = state.colors();
@@ -495,7 +495,7 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
             
             // Filter out already paired devices
             let unpaired_scanned: Vec<_> = scanned_list.into_iter()
-                .filter(|(name, ip, _)| {
+                .filter(|(_name, ip, _)| {
                     !state.zendrop_paired.iter().any(|(_, paired_ip, _)| paired_ip == ip)
                 })
                 .collect();
@@ -581,6 +581,7 @@ pub fn draw_zendrop_panel(ui: &mut Ui, state: &mut FileManagerState) {
     });
 }
 
+#[allow(dead_code)]
 fn device_icon(hostname: &str, iface: &str) -> &'static str {
     let h = hostname.to_lowercase();
     if h.contains("router") || h.contains("gateway") || h.contains("modem") {

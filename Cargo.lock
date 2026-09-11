@@ -945,7 +945,6 @@ version = "0.2.0"
 dependencies = [
  "dirs",
  "env_logger",
- "image",
  "jiff",
  "log",
  "rfd",

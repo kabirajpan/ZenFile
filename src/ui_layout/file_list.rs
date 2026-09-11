@@ -200,7 +200,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     state.item_rects.clear();
 
     let mut list_container = ui.container()
-        .id(list_container_id)
+        .raw_id(list_container_id)
         .width(width)
         .fill_y()
         .column()
@@ -306,8 +306,10 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
+                        let (cur_x, cur_y) = (ui.cursor_x, ui.cursor_y);
                         let mut item_container = ui.container()
                             .id(item_id)
+                            .pos(cur_x, cur_y)
                             .row()
                             .fill_x()
                             .valign(Align::Center)
@@ -515,8 +517,10 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
+                        let (cur_x, cur_y) = (ui.cursor_x, ui.cursor_y);
                         let mut item_container = ui.container()
                             .id(item_id)
+                            .pos(cur_x, cur_y)
                             .width(tile_w)
                             .height(tile_h)
                             .column()
@@ -799,14 +803,15 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
         let w = (start.0 - curr.0).abs();
         let h = (start.1 - curr.1).abs();
 
-        ui.container()
-            .overlay()
-            .absolute(x1, y1)
-            .width(w)
-            .height(h)
-            .bg(colors.accent.with_alpha(0.15))
-            .border(colors.accent.with_alpha(0.6), 1.0)
-            .show(|_| {});
+        ui.overlay(|ui| {
+            ui.container()
+                .absolute(x1, y1)
+                .width(w)
+                .height(h)
+                .bg(colors.accent.with_alpha(0.15))
+                .border(colors.accent.with_alpha(0.6), 1.0)
+                .show(|_| {});
+        });
     }
 
     if list_resp.clicked {
@@ -846,8 +851,9 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
     // Render Drag Thumbnail tracking cursor (only when NOT in marquee selection)
     if state.drag_select_start.is_none() {
         if let Some(drag_path) = &state.dragging_item {
-            let is_stack = state.selected_paths.len() > 1 && state.selected_paths.contains(drag_path);
-            let drag_count = if is_stack { state.selected_paths.len() } else { 1 };
+            ui.overlay(|ui| {
+                let is_stack = state.selected_paths.len() > 1 && state.selected_paths.contains(drag_path);
+                let drag_count = if is_stack { state.selected_paths.len() } else { 1 };
 
             let stack_paths = if is_stack {
                 let mut paths: Vec<_> = state.selected_paths.iter().cloned().collect();
@@ -911,7 +917,6 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     };
 
                     ui.container()
-                        .overlay()
                         .absolute(mouse_x - ox + x_offset, mouse_y - oy - y_offset)
                         .width(180.0)
                         .height(28.0)
@@ -938,7 +943,6 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
 
                 if is_stack {
                     ui.container()
-                        .overlay()
                         .absolute(mouse_x - ox + 22.0, mouse_y - oy - 2.0)
                         .width(18.0)
                         .height(18.0)
@@ -996,7 +1000,6 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     };
 
                     ui.container()
-                        .overlay()
                         .absolute(mouse_x - ox + x_offset, mouse_y - oy - y_offset)
                         .width(tile_w)
                         .height(tile_h)
@@ -1027,7 +1030,6 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                     let badge_x = mouse_x - ox + (tile_w + icon_size) / 2.0 - 8.0;
                     let badge_y = mouse_y - oy + (tile_h - icon_size) / 3.0 - 8.0;
                     ui.container()
-                        .overlay()
                         .absolute(badge_x, badge_y)
                         .width(20.0)
                         .height(20.0)
@@ -1045,6 +1047,7 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                         });
                 }
             }
-        }
+        });
     }
+}
 }

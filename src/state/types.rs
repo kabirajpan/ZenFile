@@ -70,6 +70,7 @@ pub struct TransferEntry {
     pub sent_bytes: std::sync::Arc<std::sync::atomic::AtomicU64>,
     pub status: std::sync::Arc<std::sync::Mutex<TransferStatus>>,
     pub speed_mbps: std::sync::Arc<std::sync::Mutex<f32>>,
+    #[allow(dead_code)]
     pub started_at: std::time::Instant,
     pub cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
@@ -86,8 +87,10 @@ pub enum DashboardSelection {
 #[derive(Debug, Clone)]
 pub struct ZendropDevice {
     pub ip: String,
+    #[allow(dead_code)]
     pub mac: String,
     pub hostname: String,
+    #[allow(dead_code)]
     pub iface: String,
 }
 
@@ -193,6 +196,7 @@ pub struct FileManagerState {
     pub zendrop_pair_request: std::sync::Arc<std::sync::Mutex<Option<(String, String)>>>,
     pub zendrop_pair_result: std::sync::Arc<std::sync::atomic::AtomicI32>,
     pub zendrop_pairing_active: bool,
+    #[allow(dead_code)]
     pub zendrop_pair_ip_input: String,
     pub zendrop_scanned: std::sync::Arc<std::sync::Mutex<Vec<(String, String, std::time::Instant)>>>,
     pub zendrop_scan_results: std::sync::Arc<std::sync::Mutex<Option<(Vec<ZendropDevice>, Vec<WifiNetwork>, String)>>>,
@@ -310,6 +314,7 @@ impl FileManagerState {
         };
         state.load_device_name();
         state.load_paired_devices();
+        state.load_tags();
         state.init_background_services();
         state
     }

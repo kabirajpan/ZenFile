@@ -1,7 +1,7 @@
 use crate::state::FileManagerState;
 use super::common::{
     NF_FA_HOME, NF_FA_DESKTOP, NF_FA_DOWNLOAD, NF_FA_FILE_ALT, NF_FA_HDD,
-    NF_FA_MUSIC, NF_FA_PICTURE, NF_FA_FILM, NF_FA_TACHOMETER,
+    NF_FA_MUSIC, NF_FA_PICTURE, NF_FA_FILM,
     is_drag_drop_hovered, drop_target_bg,
 };
 use zenthra::{Color, Ui, Align, FontWeight};

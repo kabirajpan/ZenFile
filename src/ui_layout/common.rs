@@ -47,8 +47,11 @@ pub fn tag_name_to_color(name: &str) -> Color {
 
 
 // Nerd Font Icon constants
+#[allow(dead_code)]
 pub const NF_FA_FOLDER: &str = "\u{f07b}";
+#[allow(dead_code)]
 pub const NF_FA_TACHOMETER: &str = "\u{f0e4}";
+#[allow(dead_code)]
 pub const NF_FA_WIFI: &str = "\u{f1eb}";  // fa-wifi — used for ZenDrop
 pub const NF_FA_DESKTOP: &str = "\u{f108}";
 pub const NF_FA_HOME: &str = "\u{f015}";

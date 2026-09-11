@@ -53,45 +53,18 @@ fn main() {
                 }
             }
 
-            // Expose the active theme flag to interaction_state so widgets can read it
+            let colors = state.colors();
+
+            // Inject theme context for component tree
+            provide_context(colors);
+            provide_context(state.theme);
+
+            // Expose the active theme flag to interaction_state for menu compatibility
             let theme_val = if state.theme == ThemeMode::Light { 1.0 } else { 0.0 };
             ui.interaction_state.insert(Id::from_u64(999999999), theme_val);
 
             let glass_val = if state.theme == ThemeMode::Glassmorphism { 1.0 } else { 0.0 };
             ui.interaction_state.insert(Id::from_u64(999999998), glass_val);
-
-            let colors = state.colors();
-
-            // Expose active theme colors to widgets
-            ui.interaction_state.insert(Id::from_u64(999999980), colors.accent.r);
-            ui.interaction_state.insert(Id::from_u64(999999981), colors.accent.g);
-            ui.interaction_state.insert(Id::from_u64(999999982), colors.accent.b);
-            ui.interaction_state.insert(Id::from_u64(999999983), colors.accent.a);
-
-            ui.interaction_state.insert(Id::from_u64(999999970), colors.highlight.r);
-            ui.interaction_state.insert(Id::from_u64(999999971), colors.highlight.g);
-            ui.interaction_state.insert(Id::from_u64(999999972), colors.highlight.b);
-            ui.interaction_state.insert(Id::from_u64(999999973), colors.highlight.a);
-
-            ui.interaction_state.insert(Id::from_u64(999999960), colors.text_primary.r);
-            ui.interaction_state.insert(Id::from_u64(999999961), colors.text_primary.g);
-            ui.interaction_state.insert(Id::from_u64(999999962), colors.text_primary.b);
-            ui.interaction_state.insert(Id::from_u64(999999963), colors.text_primary.a);
-
-            ui.interaction_state.insert(Id::from_u64(999999950), colors.text_muted.r);
-            ui.interaction_state.insert(Id::from_u64(999999951), colors.text_muted.g);
-            ui.interaction_state.insert(Id::from_u64(999999952), colors.text_muted.b);
-            ui.interaction_state.insert(Id::from_u64(999999953), colors.text_muted.a);
-
-            ui.interaction_state.insert(Id::from_u64(999999940), colors.bg_panel.r);
-            ui.interaction_state.insert(Id::from_u64(999999941), colors.bg_panel.g);
-            ui.interaction_state.insert(Id::from_u64(999999942), colors.bg_panel.b);
-            ui.interaction_state.insert(Id::from_u64(999999943), colors.bg_panel.a);
-
-            ui.interaction_state.insert(Id::from_u64(999999930), colors.border.r);
-            ui.interaction_state.insert(Id::from_u64(999999931), colors.border.g);
-            ui.interaction_state.insert(Id::from_u64(999999932), colors.border.b);
-            ui.interaction_state.insert(Id::from_u64(999999933), colors.border.a);
 
             // Main Background Container (lays out Title Bar, Navigation, Content, and Status Bar vertically)
             ui.container()
@@ -246,6 +219,7 @@ fn main() {
                     ui_layout::draw_info_window(ui, &mut state);
                     ui_layout::draw_wifi_dialog(ui, &mut state);
                     ui_layout::draw_zendrop_pair_dialog(ui, &mut state);
+                    ui_layout::draw_zendrop_send_dialog(ui, &mut state);
 
                     // 6. ZenDrop device panel (wifi icon)
                     if state.zendrop_open {

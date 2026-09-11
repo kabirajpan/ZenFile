@@ -1,6 +1,6 @@
 use crate::state::FileManagerState;
 use super::common::{
-    NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH, NF_FA_WIFI,
+    NF_FA_ARROW_LEFT, NF_FA_ARROW_RIGHT, NF_FA_ARROW_UP, NF_FA_REFRESH, NF_FA_SEARCH,
     is_drag_drop_hovered, drop_target_bg,
 };
 use zenthra::{Color, Ui, Align};
