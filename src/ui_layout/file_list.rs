@@ -306,10 +306,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
-                        let (cur_x, cur_y) = (ui.cursor_x, ui.cursor_y);
                         let mut item_container = ui.container()
                             .id(item_id)
-                            .pos(cur_x, cur_y)
                             .row()
                             .fill_x()
                             .valign(Align::Center)
@@ -517,10 +515,8 @@ pub fn draw_file_list(ui: &mut Ui, state: &mut FileManagerState, width: f32) {
                             Color::TRANSPARENT
                         };
 
-                        let (cur_x, cur_y) = (ui.cursor_x, ui.cursor_y);
                         let mut item_container = ui.container()
                             .id(item_id)
-                            .pos(cur_x, cur_y)
                             .width(tile_w)
                             .height(tile_h)
                             .column()

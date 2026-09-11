@@ -18,7 +18,6 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
     let mut title_container = ui.container()
         .full_width()
         .height(BAR_H)
-        .draggable_window(true)
         .row();
 
     if state.theme == crate::theme::ThemeMode::Glassmorphism {
@@ -331,11 +330,15 @@ pub fn draw_title_bar(ui: &mut Ui, state: &mut FileManagerState) {
             let left_w = ui.cursor_x - left_start;
             let drag_w = (ui.available_width - left_w - RIGHT_W).max(0.0);
 
-            // CENTER: spacer / drag zone (supports custom widgets)
-            ui.container()
+            // CENTER: spacer / drag zone
+            let drag_resp = ui.container()
                 .width(drag_w)
                 .height(BAR_H)
                 .show(|_ui| {});
+
+            if drag_resp.pressed {
+                ui.drag();
+            }
 
             // RIGHT: window controls
             ui.container()

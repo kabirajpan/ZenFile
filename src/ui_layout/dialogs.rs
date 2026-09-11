@@ -88,7 +88,6 @@ pub fn draw_about_window(ui: &mut Ui, state: &mut FileManagerState) {
 
 pub fn draw_context_menu(ui: &mut Ui, state: &mut FileManagerState) {
     let Some((mx, my)) = state.context_menu_pos else {
-        ui.interaction_state.remove(&zenthra::Id::from_u64(999999901)); // active submenu key
         return;
     };
 
